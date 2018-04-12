@@ -876,8 +876,10 @@ pub enum ContextData {
     Os(OsContext),
     /// Runtime data.
     Runtime(RuntimeContext),
-    /// Application data
+    /// Application data.
     App(AppContext),
+    /// Web browser data.
+    Browser(BrowserContext),
 }
 
 /// Holds device information.
@@ -993,6 +995,17 @@ pub struct AppContext {
     pub app_build: Option<String>,
 }
 
+/// Holds information about the web browser.
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+pub struct BrowserContext {
+    /// The name of the browser (for instance "Chrome").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// The version of the browser.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+}
+
 impl From<ContextData> for Context {
     fn from(data: ContextData) -> Context {
         Context {
@@ -1022,6 +1035,7 @@ into_context!(App, AppContext);
 into_context!(Device, DeviceContext);
 into_context!(Os, OsContext);
 into_context!(Runtime, RuntimeContext);
+into_context!(Browser, BrowserContext);
 
 impl From<Map<String, Value>> for Context {
     fn from(data: Map<String, Value>) -> Context {
@@ -1047,6 +1061,7 @@ impl ContextData {
             ContextData::Os(..) => "os",
             ContextData::Runtime(..) => "runtime",
             ContextData::App(..) => "app",
+            ContextData::Browser(..) => "browser",
         }
     }
 }
@@ -1109,6 +1124,7 @@ where
             "os" => convert_context!(ContextData::Os, OsContext),
             "runtime" => convert_context!(ContextData::Runtime, RuntimeContext),
             "app" => convert_context!(ContextData::App, AppContext),
+            "browser" => convert_context!(ContextData::Browser, BrowserContext),
             _ => (
                 ContextData::Default,
                 from_value(data).map_err(D::Error::custom)?,
