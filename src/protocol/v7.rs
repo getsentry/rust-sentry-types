@@ -889,43 +889,43 @@ pub struct DeviceContext {
     /// The family of the device model.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub family: Option<String>,
-    /// The device model (human readable)
+    /// The device model (human readable).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
-    /// The device model (internal identifier)
+    /// The device model (internal identifier).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model_id: Option<String>,
     /// The native cpu architecture of the device.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub arch: Option<String>,
-    /// The current battery level (0-100)
+    /// The current battery level (0-100).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub battery_level: Option<f32>,
     /// The current screen orientation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub orientation: Option<Orientation>,
-    /// Simulator/prod indicator
+    /// Simulator/prod indicator.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub simulator: Option<bool>,
-    /// Total memory available
+    /// Total memory available in byts.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub memory_size: Option<u64>,
-    /// How much memory is still available.
+    /// How much memory is still available in bytes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub free_memory: Option<u64>,
-    /// How much memory is usable for the app.
+    /// How much memory is usable for the app in bytes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub usable_memory: Option<u64>,
-    /// Total storage size of the device.
+    /// Total storage size of the device in bytes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub storage_size: Option<u64>,
-    /// How much storage is free.
+    /// How much storage is free in bytes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub free_storage: Option<u64>,
-    /// Total size of the attached external storage (eg: android SDK card).
+    /// Total size of the attached external storage in bytes (eg: android SDK card).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub external_storage_size: Option<u64>,
-    /// Free size of the attached external storage (eg: android SDK card).
+    /// Free size of the attached external storage in bytes (eg: android SDK card).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub external_free_storage: Option<u64>,
     /// Optionally an indicator when the device was booted.
@@ -948,10 +948,10 @@ pub struct OsContext {
     /// The internal build number of the operating system.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub build: Option<String>,
-    /// The current kernel version
+    /// The current kernel version.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kernel_version: Option<String>,
-    /// An indicator if the os is rooted (mobile mostly)
+    /// An indicator if the os is rooted (mobile mostly).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rooted: Option<bool>,
 }
@@ -959,10 +959,10 @@ pub struct OsContext {
 /// Holds information about the runtime.
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct RuntimeContext {
-    /// The name of the runtime (for instance JVM)
+    /// The name of the runtime (for instance JVM).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    /// The version of the runtime
+    /// The version of the runtime.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
 }
@@ -976,19 +976,19 @@ pub struct AppContext {
     /// Optional device app hash (app specific device ID)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub device_app_hash: Option<String>,
-    /// Optional build identicator
+    /// Optional build identicator.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub build_type: Option<String>,
-    /// Optional app identifier (dotted bundle id)
+    /// Optional app identifier (dotted bundle id).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app_identifier: Option<String>,
-    /// Application name as it appears on the platform
+    /// Application name as it appears on the platform.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app_name: Option<String>,
-    /// Application version as it appears on the platform
+    /// Application version as it appears on the platform.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app_version: Option<String>,
-    /// Internal build ID as it appears on the platform
+    /// Internal build ID as it appears on the platform.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app_build: Option<String>,
 }
