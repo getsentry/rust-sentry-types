@@ -25,7 +25,7 @@ pub enum AuthParseError {
 }
 
 /// Represents an auth header.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Auth {
     #[serde(skip)]
     timestamp: Option<DateTime<Utc>>,
