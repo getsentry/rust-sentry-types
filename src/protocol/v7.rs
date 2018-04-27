@@ -758,7 +758,8 @@ fn is_default_fingerprint<'a>(fp: &Cow<'a, [Cow<'a, str>]>) -> bool {
 
 impl<'a> Default for Event<'a> {
     fn default() -> Event<'a> {
-        static DEFAULT_FINGERPRINT: &'static [Cow<'static, str>] = &[Cow::Borrowed("{{ default }}")];
+        static DEFAULT_FINGERPRINT: &'static [Cow<'static, str>] =
+            &[Cow::Borrowed("{{ default }}")];
 
         Event {
             id: None,
