@@ -12,10 +12,8 @@ matrix:
   include:
     - os: linux
       env: SUITE=test
-      install: cargo build --all
     - os: linux
       env: SUITE=test
-      install: cargo build --all
       rust: "1.19.0"
     - os: linux
       env: SUITE=format-check
