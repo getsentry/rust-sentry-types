@@ -38,7 +38,7 @@ pub mod map {
 
 /// Represents a debug ID.
 pub mod debugid {
-    pub use debugid::{BreakpadFormat, DebugId, DebugIdParseError};
+    pub use debugid::{BreakpadFormat, DebugId, ParseDebugIdError};
 }
 
 /// An arbitrary (JSON) value (`serde_json::value::Value`)
