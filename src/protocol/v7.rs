@@ -826,6 +826,7 @@ fn is_other(value: &str) -> bool {
     value == "other"
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(ptr_arg))]
 fn is_default_fingerprint<'a>(fp: &Cow<'a, [Cow<'a, str>]>) -> bool {
     fp.len() == 1 && ((&fp)[0] == "{{ default }}" || (&fp)[0] == "{{default}}")
 }
@@ -1278,6 +1279,7 @@ where
     })
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(ptr_arg))]
 fn serialize_exceptions<S>(value: &Vec<Exception>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -1305,6 +1307,7 @@ where
     })
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(ptr_arg))]
 fn serialize_threads<S>(value: &Vec<Thread>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,

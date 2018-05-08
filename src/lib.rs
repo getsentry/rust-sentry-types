@@ -61,6 +61,7 @@ mod auth;
 mod dsn;
 #[cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
 mod project_id;
+#[cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
 pub mod protocol;
 #[cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
 mod utils;
