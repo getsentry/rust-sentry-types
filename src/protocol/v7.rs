@@ -963,20 +963,19 @@ pub struct Context {
 /// Typed contextual data
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "snake_case", untagged)]
-#[cfg_attr(feature = "cargo-clippy", allow(large_enum_variant))]
 pub enum ContextData {
     /// Arbitrary contextual information
     Default,
     /// Device data.
-    Device(DeviceContext),
+    Device(Box<DeviceContext>),
     /// Operating system data.
-    Os(OsContext),
+    Os(Box<OsContext>),
     /// Runtime data.
-    Runtime(RuntimeContext),
+    Runtime(Box<RuntimeContext>),
     /// Application data.
-    App(AppContext),
+    App(Box<AppContext>),
     /// Web browser data.
-    Browser(BrowserContext),
+    Browser(Box<BrowserContext>),
 }
 
 /// Holds device information.
@@ -1116,13 +1115,13 @@ macro_rules! into_context {
     ($kind: ident, $ty: ty) => {
         impl From<$ty> for ContextData {
             fn from(data: $ty) -> ContextData {
-                ContextData::$kind(data)
+                ContextData::$kind(Box::new(data))
             }
         }
 
         impl From<$ty> for Context {
             fn from(data: $ty) -> Context {
-                ContextData::$kind(data).into()
+                ContextData::$kind(Box::new(data)).into()
             }
         }
     };
@@ -1212,7 +1211,7 @@ where
         macro_rules! convert_context {
             ($enum: path, $ty: ident) => {{
                 let helper = from_value::<Helper<$ty>>(data).map_err(D::Error::custom)?;
-                ($enum(helper.data), helper.extra)
+                ($enum(Box::new(helper.data)), helper.extra)
             }};
         }
 
