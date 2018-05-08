@@ -1,6 +1,7 @@
 //! This module exposes the types for the Sentry protocol in different versions.
 
 #[cfg(feature = "with_protocol")]
+#[cfg_attr(feature = "cargo-clippy", allow(cast_lossless, ptr_arg))]
 pub mod v7;
 
 /// The latest version of the protocol.

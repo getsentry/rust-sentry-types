@@ -309,7 +309,7 @@ impl Into<u64> for Addr {
 }
 
 fn is_false(value: &bool) -> bool {
-    *value == false
+    !*value
 }
 
 /// Represents a single thread.
@@ -962,6 +962,7 @@ pub struct Context {
 /// Typed contextual data
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "snake_case", untagged)]
+#[cfg_attr(feature = "cargo-clippy", allow(large_enum_variant))]
 pub enum ContextData {
     /// Arbitrary contextual information
     Default,
@@ -1104,7 +1105,7 @@ pub struct BrowserContext {
 impl From<ContextData> for Context {
     fn from(data: ContextData) -> Context {
         Context {
-            data: data,
+            data,
             extra: Map::new(),
         }
     }
@@ -1165,7 +1166,7 @@ fn serialize_event_id<S>(value: &Option<Uuid>, serializer: S) -> Result<S::Ok, S
 where
     S: Serializer,
 {
-    if let &Some(uuid) = value {
+    if let Some(ref uuid) = *value {
         serializer.serialize_some(&uuid.simple().to_string())
     } else {
         serializer.serialize_none()
