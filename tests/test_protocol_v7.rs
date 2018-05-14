@@ -929,26 +929,26 @@ fn test_full_exception_stacktrace() {
     assert_eq!(
         serde_json::to_string(&event).unwrap(),
         "{\"exception\":{\"values\":[{\"type\":\"DivisionByZero\",\"value\":\
-        \"integer division or modulo by zero\",\"module\":\"x\",\"stacktrace\":\
-        {\"frames\":[{\"function\":\"main\",\"symbol\":\"main\",\"module\":\
-        \"hello\",\"package\":\"hello.whl\",\"filename\":\"hello.py\",\"abs_path\"\
-        :\"/app/hello.py\",\"lineno\":7,\"colno\":42,\"pre_context\":[\"foo\",\"\
-        bar\"],\"context_line\":\"hey hey hey\",\"post_context\":[\"foo\",\"bar\"]\
-        ,\"in_app\":true,\"vars\":{\"var\":\"value\"},\"image_addr\":\"0x0\",\
-        \"instruction_addr\":\"0x0\",\"symbol_addr\":\"0x0\"}],\"frames_omitted\":\
-        [1,2],\"registers\":{\"x8\":\"0x0\",\"x20\":\"0x1\",\"x21\":\"0x1\",\"x28\
-        \":\"0x17025f650\",\"x4\":\"0x1702eb100\",\"x24\":\"0x1b1399c20\",\"sp\":\
-        \"0x16fd75060\",\"x1\":\"0x1b1399bb1\",\"x23\":\"0x1afe10040\",\"x14\":\
-        \"0x1\",\"x19\":\"0x0\",\"x18\":\"0x0\",\"x3\":\"0x1\",\"pc\":\"0x18a310ea4\
-        \",\"x7\":\"0x0\",\"x10\":\"0x57b\",\"x6\":\"0x0\",\"x13\":\"0x1\",\"x2\":\
-        \"0x1\",\"x27\":\"0x1\",\"x26\":\"0x191ec48d1\",\"x9\":\"0x1b1399c20\",\
-        \"x29\":\"0x16fd75060\",\"x5\":\"0x1702eb100\",\"fp\":\"0x16fd75060\",\
-        \"x0\":\"0x1\",\"lr\":\"0x18a31aadc\",\"x25\":\"0x0\",\"x16\":\
-        \"0x18a31aa34\",\"x11\":\"0x1b3b37b1d\",\"cpsr\":\"0x20000000\",\"x17\":\
-        \"0x0\",\"x15\":\"0x881\",\"x22\":\"0x1b1399bb0\",\"x12\":\"0x1b3b37b1d\"}\
-        },\"raw_stacktrace\":{\"frames\":[{\"function\":\"main\",\"image_addr\":\
-        \"0x0\",\"instruction_addr\":\"0x0\",\"symbol_addr\":\"0x0\"}],\
-        \"frames_omitted\":[1,2]}}]}}"
+         \"integer division or modulo by zero\",\"module\":\"x\",\"stacktrace\":\
+         {\"frames\":[{\"function\":\"main\",\"symbol\":\"main\",\"module\":\
+         \"hello\",\"package\":\"hello.whl\",\"filename\":\"hello.py\",\"abs_path\"\
+         :\"/app/hello.py\",\"lineno\":7,\"colno\":42,\"pre_context\":[\"foo\",\"\
+         bar\"],\"context_line\":\"hey hey hey\",\"post_context\":[\"foo\",\"bar\"]\
+         ,\"in_app\":true,\"vars\":{\"var\":\"value\"},\"image_addr\":\"0x0\",\
+         \"instruction_addr\":\"0x0\",\"symbol_addr\":\"0x0\"}],\"frames_omitted\":\
+         [1,2],\"registers\":{\"x8\":\"0x0\",\"x20\":\"0x1\",\"x21\":\"0x1\",\"x28\
+         \":\"0x17025f650\",\"x4\":\"0x1702eb100\",\"x24\":\"0x1b1399c20\",\"sp\":\
+         \"0x16fd75060\",\"x1\":\"0x1b1399bb1\",\"x23\":\"0x1afe10040\",\"x14\":\
+         \"0x1\",\"x19\":\"0x0\",\"x18\":\"0x0\",\"x3\":\"0x1\",\"pc\":\"0x18a310ea4\
+         \",\"x7\":\"0x0\",\"x10\":\"0x57b\",\"x6\":\"0x0\",\"x13\":\"0x1\",\"x2\":\
+         \"0x1\",\"x27\":\"0x1\",\"x26\":\"0x191ec48d1\",\"x9\":\"0x1b1399c20\",\
+         \"x29\":\"0x16fd75060\",\"x5\":\"0x1702eb100\",\"fp\":\"0x16fd75060\",\
+         \"x0\":\"0x1\",\"lr\":\"0x18a31aadc\",\"x25\":\"0x0\",\"x16\":\
+         \"0x18a31aa34\",\"x11\":\"0x1b3b37b1d\",\"cpsr\":\"0x20000000\",\"x17\":\
+         \"0x0\",\"x15\":\"0x881\",\"x22\":\"0x1b1399bb0\",\"x12\":\"0x1b3b37b1d\"}\
+         },\"raw_stacktrace\":{\"frames\":[{\"function\":\"main\",\"image_addr\":\
+         \"0x0\",\"instruction_addr\":\"0x0\",\"symbol_addr\":\"0x0\"}],\
+         \"frames_omitted\":[1,2]}}]}}"
     );
 }
 

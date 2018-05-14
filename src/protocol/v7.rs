@@ -362,7 +362,7 @@ pub struct Exception {
     pub raw_stacktrace: Option<Stacktrace>,
     /// Optional identifier referring to a thread.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub thread_id: Option<ThreadId>
+    pub thread_id: Option<ThreadId>,
 }
 
 /// Represents the level of severity of an event or breadcrumb
@@ -622,7 +622,7 @@ impl DebugImage {
 }
 
 macro_rules! into_debug_image {
-    ($kind: ident, $ty: ty) => {
+    ($kind:ident, $ty:ty) => {
         impl From<$ty> for DebugImage {
             fn from(data: $ty) -> DebugImage {
                 DebugImage::$kind(data)
@@ -1119,7 +1119,7 @@ impl From<ContextData> for Context {
 }
 
 macro_rules! into_context {
-    ($kind: ident, $ty: ty) => {
+    ($kind:ident, $ty:ty) => {
         impl From<$ty> for ContextData {
             fn from(data: $ty) -> ContextData {
                 ContextData::$kind(Box::new(data))
@@ -1216,7 +1216,7 @@ where
         };
 
         macro_rules! convert_context {
-            ($enum: path, $ty: ident) => {{
+            ($enum:path, $ty:ident) => {{
                 let helper = from_value::<Helper<$ty>>(data).map_err(D::Error::custom)?;
                 ($enum(Box::new(helper.data)), helper.extra)
             }};
