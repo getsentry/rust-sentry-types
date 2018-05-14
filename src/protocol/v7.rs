@@ -174,7 +174,7 @@ pub struct Stacktrace {
     pub frames_omitted: Option<(u64, u64)>,
     /// Optional register values of the thread.
     #[serde(skip_serializing_if = "Map::is_empty")]
-    pub registers: Map<String, Addr>,
+    pub registers: Map<String, RegVal>,
 }
 
 impl Stacktrace {
@@ -314,6 +314,58 @@ impl Into<u64> for Addr {
 
 fn is_false(value: &bool) -> bool {
     !*value
+}
+
+/// Represents a register value.
+#[derive(Default, Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+pub struct RegVal(pub u64);
+
+impl fmt::Display for RegVal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "0x{:x}", self.0)
+    }
+}
+
+impl From<u64> for RegVal {
+    fn from(addr: u64) -> RegVal {
+        RegVal(addr)
+    }
+}
+
+impl From<i32> for RegVal {
+    fn from(addr: i32) -> RegVal {
+        RegVal(addr as u64)
+    }
+}
+
+impl From<u32> for RegVal {
+    fn from(addr: u32) -> RegVal {
+        RegVal(addr as u64)
+    }
+}
+
+impl From<usize> for RegVal {
+    fn from(addr: usize) -> RegVal {
+        RegVal(addr as u64)
+    }
+}
+
+impl<T> From<*const T> for RegVal {
+    fn from(addr: *const T) -> RegVal {
+        RegVal(addr as u64)
+    }
+}
+
+impl<T> From<*mut T> for RegVal {
+    fn from(addr: *mut T) -> RegVal {
+        RegVal(addr as u64)
+    }
+}
+
+impl Into<u64> for RegVal {
+    fn into(self: RegVal) -> u64 {
+        self.0
+    }
 }
 
 /// Represents a single thread.
@@ -1419,6 +1471,48 @@ impl str::FromStr for Addr {
             u64::from_str_radix(&s[2..], 16).map(Addr)
         } else {
             u64::from_str_radix(&s, 10).map(Addr)
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for RegVal {
+    fn deserialize<D>(deserializer: D) -> Result<RegVal, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Repr {
+            Str(String),
+            Uint(u64),
+        }
+
+        Ok(
+            match Repr::deserialize(deserializer).map_err(D::Error::custom)? {
+                Repr::Str(s) => s.parse().map_err(D::Error::custom)?,
+                Repr::Uint(val) => RegVal(val),
+            },
+        )
+    }
+}
+
+impl Serialize for RegVal {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&format!("0x{:0x}", self.0))
+    }
+}
+
+impl str::FromStr for RegVal {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<RegVal, ParseIntError> {
+        if s.len() > 2 && (&s[..2] == "0x" || &s[..2] == "0X") {
+            u64::from_str_radix(&s[2..], 16).map(RegVal)
+        } else {
+            u64::from_str_radix(&s, 10).map(RegVal)
         }
     }
 }
