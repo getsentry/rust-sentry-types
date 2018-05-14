@@ -165,12 +165,16 @@ pub struct EmbeddedSources {
 
 /// Represents a stacktrace.
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+#[serde(default)]
 pub struct Stacktrace {
     /// The list of frames in the stacktrace.
     pub frames: Vec<Frame>,
-    /// Optionally a segment of frames removed (`start`, `end`)
+    /// Optionally a segment of frames removed (`start`, `end`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub frames_omitted: Option<(u64, u64)>,
+    /// Optional register values of the thread.
+    #[serde(skip_serializing_if = "Map::is_empty")]
+    pub registers: Map<String, Addr>,
 }
 
 impl Stacktrace {
