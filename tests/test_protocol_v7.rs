@@ -754,6 +754,7 @@ fn test_minimal_exception_stacktrace() {
                     ..Default::default()
                 }),
                 raw_stacktrace: None,
+                ..Default::default()
             },
         ],
         ..Default::default()
@@ -804,6 +805,7 @@ fn test_slightly_larger_exception_stacktrace() {
                     ..Default::default()
                 }),
                 raw_stacktrace: None,
+                ..Default::default()
             },
         ],
         ..Default::default()
@@ -876,6 +878,7 @@ fn test_full_exception_stacktrace() {
                     ],
                     frames_omitted: Some((1, 2)),
                 }),
+                ..Default::default()
             },
         ],
         ..Default::default()
