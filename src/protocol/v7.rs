@@ -562,9 +562,6 @@ impl Level {
     }
 }
 
-<<<<<<< HEAD
-/// Represents a single breadcrumb.
-=======
 impl<'de> Deserialize<'de> for Level {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Level, D::Error> {
         match <&str>::deserialize(deserializer)? {
@@ -578,8 +575,7 @@ impl<'de> Deserialize<'de> for Level {
     }
 }
 
-/// Represents a single breadcrumb
->>>>>>> feat(v7): Support loglevel "log"
+/// Represents a single breadcrumb.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(default)]
 pub struct Breadcrumb {
