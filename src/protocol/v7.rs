@@ -659,7 +659,7 @@ impl str::FromStr for IpAddress {
 
 impl<'de> Deserialize<'de> for IpAddress {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<IpAddress, D::Error> {
-        String::deserialize(deserializer)?
+        <&str>::deserialize(deserializer)?
             .parse()
             .map_err(DeError::custom)
     }
