@@ -264,11 +264,7 @@ impl Addr {
     }
 }
 
-impl fmt::Display for Addr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "0x{:x}", self.0)
-    }
-}
+impl_serde_hex!(Addr, u64);
 
 impl From<u64> for Addr {
     fn from(addr: u64) -> Addr {
@@ -320,11 +316,7 @@ fn is_false(value: &bool) -> bool {
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct RegVal(pub u64);
 
-impl fmt::Display for RegVal {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "0x{:x}", self.0)
-    }
-}
+impl_serde_hex!(RegVal, u64);
 
 impl From<u64> for RegVal {
     fn from(addr: u64) -> RegVal {
@@ -419,16 +411,11 @@ impl Into<u32> for HResult {
 }
 
 /// Error code used for Win32 user space and NTSTATUS kernel errors.
-#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq, Ord, PartialOrd,
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Ord, PartialOrd,
          Hash)]
 pub struct Win32ErrorCode(pub u32);
 
-impl fmt::Display for Win32ErrorCode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // NTSTATUS is usually printed as uppercase hex
-        write!(f, "{:#X}", self.0)
-    }
-}
+impl_serde_hex!(Win32ErrorCode, u32);
 
 impl From<u32> for Win32ErrorCode {
     fn from(code: u32) -> Win32ErrorCode {
@@ -1534,89 +1521,5 @@ impl Serialize for DebugImage {
         };
         c.insert("type".into(), self.type_name().into());
         c.serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for Addr {
-    fn deserialize<D>(deserializer: D) -> Result<Addr, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Repr {
-            Str(String),
-            Uint(u64),
-        }
-
-        Ok(
-            match Repr::deserialize(deserializer).map_err(D::Error::custom)? {
-                Repr::Str(s) => s.parse().map_err(D::Error::custom)?,
-                Repr::Uint(val) => Addr(val),
-            },
-        )
-    }
-}
-
-impl Serialize for Addr {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&format!("{:#x}", self.0))
-    }
-}
-
-impl str::FromStr for Addr {
-    type Err = ParseIntError;
-
-    fn from_str(s: &str) -> Result<Addr, ParseIntError> {
-        if s.len() > 2 && (&s[..2] == "0x" || &s[..2] == "0X") {
-            u64::from_str_radix(&s[2..], 16).map(Addr)
-        } else {
-            u64::from_str_radix(&s, 10).map(Addr)
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for RegVal {
-    fn deserialize<D>(deserializer: D) -> Result<RegVal, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Repr {
-            Str(String),
-            Uint(u64),
-        }
-
-        Ok(
-            match Repr::deserialize(deserializer).map_err(D::Error::custom)? {
-                Repr::Str(s) => s.parse().map_err(D::Error::custom)?,
-                Repr::Uint(val) => RegVal(val),
-            },
-        )
-    }
-}
-
-impl Serialize for RegVal {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&format!("{:#x}", self.0))
-    }
-}
-
-impl str::FromStr for RegVal {
-    type Err = ParseIntError;
-
-    fn from_str(s: &str) -> Result<RegVal, ParseIntError> {
-        if s.len() > 2 && (&s[..2] == "0x" || &s[..2] == "0X") {
-            u64::from_str_radix(&s[2..], 16).map(RegVal)
-        } else {
-            u64::from_str_radix(&s, 10).map(RegVal)
-        }
     }
 }
