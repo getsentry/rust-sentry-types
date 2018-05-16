@@ -254,7 +254,7 @@ impl fmt::Display for ThreadId {
 }
 
 /// Represents an address.
-#[derive(Default, Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Addr(pub u64);
 
 impl Addr {
@@ -317,7 +317,7 @@ fn is_false(value: &bool) -> bool {
 }
 
 /// Represents a register value.
-#[derive(Default, Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct RegVal(pub u64);
 
 impl fmt::Display for RegVal {
@@ -385,22 +385,123 @@ pub struct Thread {
     /// Optional raw stacktrace.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub raw_stacktrace: Option<Stacktrace>,
-    /// indicates a crashed thread
+    /// True if this is the crashed thread.
     #[serde(skip_serializing_if = "is_false")]
     pub crashed: bool,
-    /// indicates that the thread was not suspended when the
+    /// Indicates that the thread was not suspended when the
     /// event was created.
     #[serde(skip_serializing_if = "is_false")]
     pub current: bool,
 }
 
-/// Represents a single exception
+/// Error code used in Windows COM.
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq, Ord, PartialOrd,
+         Hash)]
+pub struct HResult(pub u32);
+
+impl fmt::Display for HResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // HRESULT is usually printed as uppercase hex
+        write!(f, "{:#X}", self.0)
+    }
+}
+
+impl From<u32> for HResult {
+    fn from(hresult: u32) -> HResult {
+        HResult(hresult)
+    }
+}
+
+impl Into<u32> for HResult {
+    fn into(self: HResult) -> u32 {
+        self.0
+    }
+}
+
+/// Error code used for Win32 user space and NTSTATUS kernel errors.
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq, Ord, PartialOrd,
+         Hash)]
+pub struct Win32ErrorCode(pub u32);
+
+impl fmt::Display for Win32ErrorCode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // NTSTATUS is usually printed as uppercase hex
+        write!(f, "{:#X}", self.0)
+    }
+}
+
+impl From<u32> for Win32ErrorCode {
+    fn from(code: u32) -> Win32ErrorCode {
+        Win32ErrorCode(code)
+    }
+}
+
+impl Into<u32> for Win32ErrorCode {
+    fn into(self: Win32ErrorCode) -> u32 {
+        self.0
+    }
+}
+
+/// Mach exception information.
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
-pub struct Exception {
-    /// The type of the exception
+pub struct MachException {
+    /// The mach exception type.
+    #[serde(rename = "exception")]
+    pub ty: i32,
+    /// The mach exception code.
+    pub code: u64,
+    /// The mach exception subcode.
+    pub subcode: u64,
+}
+
+/// Operating system or runtime meta information to an exception mechanism.
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+pub struct MechanismMeta {
+    /// Optional ISO C standard error code.
+    pub errno: Option<i32>,
+    /// Optional POSIX signal number.
+    pub signal: Option<i32>,
+    /// Optional mach exception information.
+    pub mach_exception: Option<MachException>,
+    /// Optional Windows COM error code.
+    pub hresult: Option<HResult>,
+    /// Optional Win32 / NTSTATUS error code.
+    pub seh_code: Option<Win32ErrorCode>,
+    /// Optional combined string representation of the error codes.
+    ///
+    /// For Mach errors, for example, this could be "EXC_BAD_ACCESS / KERN_INVALID_ADDRESS". In most
+    /// other cases, this will either be blank or the name of the error constant defining the error
+    /// code.
+    pub code_name: Option<String>,
+}
+
+/// Represents a single exception.
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+#[serde(default)]
+pub struct Mechanism {
+    /// The mechanism type identifier.
     #[serde(rename = "type")]
     pub ty: String,
-    /// The optional value of the exception
+    /// Human readable detail description.
+    pub description: Option<String>,
+    /// An optional link to online resources describing this error.
+    #[serde(with = "url_serde", skip_serializing_if = "Option::is_none")]
+    pub help_link: Option<Url>,
+    /// An optional flag indicating whether this exception was handled.
+    pub handled: Option<bool>,
+    /// Additional attributes depending on the mechanism type.
+    pub data: Map<String, String>,
+    /// Operating system or runtime meta information.
+    pub meta: MechanismMeta,
+}
+
+/// Represents a single exception.
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+pub struct Exception {
+    /// The type of the exception.
+    #[serde(rename = "type")]
+    pub ty: String,
+    /// The optional value of the exception.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
     /// An optional module for this exception.
@@ -415,15 +516,18 @@ pub struct Exception {
     /// Optional identifier referring to a thread.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thread_id: Option<ThreadId>,
+    /// The mechanism of the exception including OS specific exception values.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mechanism: Option<Mechanism>,
 }
 
-/// Represents the level of severity of an event or breadcrumb
+/// Represents the level of severity of an event or breadcrumb.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Level {
-    /// Indicates very spammy debug information
+    /// Indicates very spammy debug information.
     Debug,
-    /// Informational messages
+    /// Informational messages.
     Info,
     /// A warning.
     Warning,
@@ -466,7 +570,7 @@ impl Level {
     }
 }
 
-/// Represents a single breadcrumb
+/// Represents a single breadcrumb.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(default)]
 pub struct Breadcrumb {
@@ -1459,7 +1563,7 @@ impl Serialize for Addr {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&format!("0x{:0x}", self.0))
+        serializer.serialize_str(&format!("{:#x}", self.0))
     }
 }
 
@@ -1501,7 +1605,7 @@ impl Serialize for RegVal {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&format!("0x{:0x}", self.0))
+        serializer.serialize_str(&format!("{:#x}", self.0))
     }
 }
 
