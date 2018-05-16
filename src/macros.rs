@@ -60,12 +60,10 @@ macro_rules! impl_serde_hex {
                     Uint($num),
                 }
 
-                Ok(
-                    match Repr::deserialize(deserializer)? {
-                        Repr::Str(s) => s.parse().map_err(D::Error::custom)?,
-                        Repr::Uint(val) => $type(val),
-                    },
-                )
+                Ok(match Repr::deserialize(deserializer)? {
+                    Repr::Str(s) => s.parse().map_err(D::Error::custom)?,
+                    Repr::Uint(val) => $type(val),
+                })
             }
         }
 

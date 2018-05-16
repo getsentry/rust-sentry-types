@@ -387,16 +387,10 @@ pub struct Thread {
 }
 
 /// Error code used in Windows COM.
-#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq, Ord, PartialOrd,
-         Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct HResult(pub u32);
 
-impl fmt::Display for HResult {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // HRESULT is usually printed as uppercase hex
-        write!(f, "{:#X}", self.0)
-    }
-}
+impl_serde_hex!(HResult, u32);
 
 impl From<u32> for HResult {
     fn from(hresult: u32) -> HResult {
@@ -411,8 +405,7 @@ impl Into<u32> for HResult {
 }
 
 /// Error code used for Win32 user space and NTSTATUS kernel errors.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Ord, PartialOrd,
-         Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Win32ErrorCode(pub u32);
 
 impl_serde_hex!(Win32ErrorCode, u32);
@@ -445,21 +438,27 @@ pub struct MachException {
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct MechanismMeta {
     /// Optional ISO C standard error code.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub errno: Option<i32>,
     /// Optional POSIX signal number.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub signal: Option<i32>,
     /// Optional mach exception information.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mach_exception: Option<MachException>,
     /// Optional Windows COM error code.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hresult: Option<HResult>,
     /// Optional Win32 / NTSTATUS error code.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub seh_code: Option<Win32ErrorCode>,
-    /// Optional combined string representation of the error codes.
-    ///
-    /// For Mach errors, for example, this could be "EXC_BAD_ACCESS / KERN_INVALID_ADDRESS". In most
-    /// other cases, this will either be blank or the name of the error constant defining the error
-    /// code.
-    pub code_name: Option<String>,
+}
+
+impl MechanismMeta {
+    fn is_empty(&self) -> bool {
+        self.errno.is_none() && self.signal.is_none() && self.mach_exception.is_none()
+            && self.hresult.is_none() && self.seh_code.is_none()
+    }
 }
 
 /// Represents a single exception.
@@ -470,15 +469,19 @@ pub struct Mechanism {
     #[serde(rename = "type")]
     pub ty: String,
     /// Human readable detail description.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// An optional link to online resources describing this error.
     #[serde(with = "url_serde", skip_serializing_if = "Option::is_none")]
     pub help_link: Option<Url>,
     /// An optional flag indicating whether this exception was handled.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub handled: Option<bool>,
     /// Additional attributes depending on the mechanism type.
-    pub data: Map<String, String>,
+    #[serde(skip_serializing_if = "Map::is_empty")]
+    pub data: Map<String, Value>,
     /// Operating system or runtime meta information.
+    #[serde(skip_serializing_if = "MechanismMeta::is_empty")]
     pub meta: MechanismMeta,
 }
 
