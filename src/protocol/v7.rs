@@ -455,7 +455,10 @@ impl From<i32> for PosixSignal {
 impl From<(i32, i32)> for PosixSignal {
     fn from(tuple: (i32, i32)) -> PosixSignal {
         let (number, code) = tuple;
-        PosixSignal { number, code: Some(code) }
+        PosixSignal {
+            number,
+            code: Some(code),
+        }
     }
 }
 

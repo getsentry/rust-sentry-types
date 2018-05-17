@@ -979,7 +979,10 @@ fn test_exception_mechanism() {
                         map
                     },
                     meta: v7::MechanismMeta {
-                        signal: Some(11.into()),
+                        signal: Some(v7::PosixSignal {
+                            number: 11,
+                            code: None,
+                        }),
                         mach_exception: Some(v7::MachException {
                             ty: 1,
                             code: 1,
