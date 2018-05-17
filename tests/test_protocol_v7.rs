@@ -1000,8 +1000,8 @@ fn test_exception_mechanism() {
         "{\"exception\":{\"values\":[{\"type\":\"EXC_BAD_ACCESS\",\"value\":\"Attempted to \
          dereference garbage pointer 0x1\",\"mechanism\":{\"type\":\"mach\",\"help_link\":\"\
          https://developer.apple.com/library/content/qa/qa1367/_index.html\",\"handled\":false,\"\
-         data\":{\"relevant_address\":\"0x1\"},\"meta\":{\"signal\":11,\"mach_exception\":{\"\
-         exception\":1,\"code\":1,\"subcode\":8}}}}]}}"
+         data\":{\"relevant_address\":\"0x1\"},\"meta\":{\"signal\":{\"number\":11},\"mach_exception\
+         \":{\"exception\":1,\"code\":1,\"subcode\":8}}}}]}}"
     );
 }
 
