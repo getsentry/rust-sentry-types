@@ -973,6 +973,12 @@ fn test_full_exception_stacktrace() {
 }
 
 #[test]
+fn test_exception_null() {
+    let event: v7::Event = serde_json::from_slice(b"{\"exception\":null}").unwrap();
+    assert_eq!(event.exceptions, vec![]);
+}
+
+#[test]
 fn test_exception_mechanism() {
     let event: v7::Event = v7::Event {
         exceptions: vec![

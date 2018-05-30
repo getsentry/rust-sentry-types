@@ -1466,10 +1466,11 @@ where
         Unqualified(Vec<Exception>),
         Single(Exception),
     }
-    Repr::deserialize(deserializer).map(|x| match x {
-        Repr::Qualified { values } => values,
-        Repr::Unqualified(values) => values,
-        Repr::Single(exc) => vec![exc],
+    Option::<Repr>::deserialize(deserializer).map(|x| match x {
+        None => vec![],
+        Some(Repr::Qualified { values }) => values,
+        Some(Repr::Unqualified(values)) => values,
+        Some(Repr::Single(exc)) => vec![exc],
     })
 }
 
