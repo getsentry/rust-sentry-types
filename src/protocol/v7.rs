@@ -1008,7 +1008,7 @@ pub struct Event<'a> {
     )]
     pub contexts: Map<String, Context>,
     /// List of breadcrumbs to send along.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(with = "serde_values", skip_serializing_if = "Vec::is_empty")]
     pub breadcrumbs: Vec<Breadcrumb>,
     /// Exceptions to be attached (one or multiple if chained).
     #[serde(
@@ -1025,11 +1025,7 @@ pub struct Event<'a> {
     #[serde(skip_serializing_if = "Option::is_none", rename = "template")]
     pub template_info: Option<TemplateInfo>,
     /// A list of threads.
-    #[serde(
-        skip_serializing_if = "Vec::is_empty",
-        serialize_with = "serialize_threads",
-        deserialize_with = "deserialize_threads"
-    )]
+    #[serde(with = "serde_values", skip_serializing_if = "Vec::is_empty")]
     pub threads: Vec<Thread>,
     /// Optional tags to be attached to the event.
     #[serde(skip_serializing_if = "Map::is_empty")]
@@ -1090,8 +1086,9 @@ impl<'a, 'de> Deserialize<'de> for Event<'a> {
                 deserialize_with = "deserialize_context", rename = "sentry.interfaces.Contexts"
             )]
             pub contexts_iface: Map<String, Context>,
+            #[serde(with = "serde_values")]
             pub breadcrumbs: Vec<Breadcrumb>,
-            #[serde(rename = "sentry.interfaces.Breadcrumbs")]
+            #[serde(with = "serde_values", rename = "sentry.interfaces.Breadcrumbs")]
             pub breadcrumbs_iface: Vec<Breadcrumb>,
             #[serde(deserialize_with = "deserialize_exceptions", rename = "exception")]
             pub exceptions: Vec<Exception>,
@@ -1106,9 +1103,9 @@ impl<'a, 'de> Deserialize<'de> for Event<'a> {
             pub template_info: Option<TemplateInfo>,
             #[serde(rename = "sentry.interfaces.Template")]
             pub template_info_iface: Option<TemplateInfo>,
-            #[serde(deserialize_with = "deserialize_threads")]
+            #[serde(with = "serde_values")]
             pub threads: Vec<Thread>,
-            #[serde(rename = "sentry.interfaces.Threads")]
+            #[serde(with = "serde_values", rename = "sentry.interfaces.Threads")]
             pub threads_iface: Vec<Thread>,
             pub tags: Map<String, String>,
             pub extra: Map<String, Value>,
@@ -1698,32 +1695,42 @@ where
     Helper { values: &value }.serialize(serializer)
 }
 
-fn deserialize_threads<'de, D>(deserializer: D) -> Result<Vec<Thread>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum Repr {
-        Qualified { values: Vec<Thread> },
-        Unqualified(Vec<Thread>),
-    }
-    Repr::deserialize(deserializer).map(|x| match x {
-        Repr::Qualified { values } => values,
-        Repr::Unqualified(values) => values,
-    })
-}
+#[cfg(feature = "with_serde")]
+mod serde_values {
+    use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
-#[cfg_attr(feature = "cargo-clippy", allow(ptr_arg))]
-fn serialize_threads<S>(value: &Vec<Thread>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    #[derive(Serialize)]
-    struct Helper<'a> {
-        values: &'a [Thread],
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: Deserialize<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Repr<T> {
+            Qualified { values: Vec<T> },
+            Unqualified(Vec<T>),
+        }
+
+        Option::<Repr<T>>::deserialize(deserializer).map(|x| match x {
+            None => vec![],
+            Some(Repr::Qualified { values }) => values,
+            Some(Repr::Unqualified(values)) => values,
+        })
     }
-    Helper { values: &value }.serialize(serializer)
+
+    #[cfg_attr(feature = "cargo-clippy", allow(ptr_arg))]
+    pub fn serialize<S, T>(value: &Vec<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Serialize,
+    {
+        #[derive(Serialize)]
+        struct Helper<'a, T: 'a> {
+            values: &'a [T],
+        }
+
+        Helper { values: &value }.serialize(serializer)
+    }
 }
 
 impl<'de> Deserialize<'de> for DebugImage {

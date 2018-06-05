@@ -403,10 +403,10 @@ fn test_breadcrumbs() {
     assert_roundtrip(&event);
     assert_eq!(
         serde_json::to_string(&event).unwrap(),
-        "{\"breadcrumbs\":[{\"timestamp\":1514103120.713,\"type\":\"default\",\
+        "{\"breadcrumbs\":{\"values\":[{\"timestamp\":1514103120.713,\"type\":\"default\",\
          \"category\":\"ui.click\",\"message\":\"span.platform-card > li.platform-tile\"\
          },{\"timestamp\":1514103120.913,\"type\":\"http\",\"category\":\"xhr\",\"data\"\
-         :{\"url\":\"/api/0/organizations/foo\",\"status_code\":200,\"method\":\"GET\"}}]}"
+         :{\"url\":\"/api/0/organizations/foo\",\"status_code\":200,\"method\":\"GET\"}}]}}"
     );
 }
 
