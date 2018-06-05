@@ -1049,7 +1049,7 @@ pub struct Event<'a> {
 }
 
 #[cfg(feature = "with_serde")]
-impl<'de> Deserialize<'de> for Event<'static> {
+impl<'a, 'de> Deserialize<'de> for Event<'a> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -1225,7 +1225,7 @@ impl<'de> Deserialize<'de> for Event<'static> {
             }
         }
 
-        Ok(LenientEvent::<'static>::deserialize(deserializer)?.into())
+        Ok(LenientEvent::deserialize(deserializer)?.into())
     }
 }
 
