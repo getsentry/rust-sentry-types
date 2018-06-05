@@ -1011,12 +1011,7 @@ pub struct Event<'a> {
     #[serde(with = "serde_values", skip_serializing_if = "Vec::is_empty")]
     pub breadcrumbs: Vec<Breadcrumb>,
     /// Exceptions to be attached (one or multiple if chained).
-    #[serde(
-        skip_serializing_if = "Vec::is_empty",
-        serialize_with = "serialize_exceptions",
-        deserialize_with = "deserialize_exceptions",
-        rename = "exception"
-    )]
+    #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_values", rename = "exception")]
     pub exceptions: Vec<Exception>,
     /// A single stacktrace (deprecated)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1090,11 +1085,9 @@ impl<'a, 'de> Deserialize<'de> for Event<'a> {
             pub breadcrumbs: Vec<Breadcrumb>,
             #[serde(with = "serde_values", rename = "sentry.interfaces.Breadcrumbs")]
             pub breadcrumbs_iface: Vec<Breadcrumb>,
-            #[serde(deserialize_with = "deserialize_exceptions", rename = "exception")]
+            #[serde(with = "serde_values", rename = "exception")]
             pub exceptions: Vec<Exception>,
-            #[serde(
-                deserialize_with = "deserialize_exceptions", rename = "sentry.interfaces.Exception"
-            )]
+            #[serde(with = "serde_values", rename = "sentry.interfaces.Exception")]
             pub exceptions_iface: Vec<Exception>,
             pub stacktrace: Option<Stacktrace>,
             #[serde(rename = "sentry.interfaces.Stacktrace")]
@@ -1664,40 +1657,9 @@ where
     map.end()
 }
 
-fn deserialize_exceptions<'de, D>(deserializer: D) -> Result<Vec<Exception>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum Repr {
-        Qualified { values: Vec<Exception> },
-        Unqualified(Vec<Exception>),
-        Single(Exception),
-    }
-    Option::<Repr>::deserialize(deserializer).map(|x| match x {
-        None => vec![],
-        Some(Repr::Qualified { values }) => values,
-        Some(Repr::Unqualified(values)) => values,
-        Some(Repr::Single(exc)) => vec![exc],
-    })
-}
-
-#[cfg_attr(feature = "cargo-clippy", allow(ptr_arg))]
-fn serialize_exceptions<S>(value: &Vec<Exception>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    #[derive(Serialize)]
-    struct Helper<'a> {
-        values: &'a [Exception],
-    }
-    Helper { values: &value }.serialize(serializer)
-}
-
 #[cfg(feature = "with_serde")]
 mod serde_values {
-    use serde::{Serialize, Serializer, Deserialize, Deserializer};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
     where
@@ -1709,12 +1671,14 @@ mod serde_values {
         enum Repr<T> {
             Qualified { values: Vec<T> },
             Unqualified(Vec<T>),
+            Single(T),
         }
 
         Option::<Repr<T>>::deserialize(deserializer).map(|x| match x {
             None => vec![],
             Some(Repr::Qualified { values }) => values,
             Some(Repr::Unqualified(values)) => values,
+            Some(Repr::Single(value)) => vec![value],
         })
     }
 
