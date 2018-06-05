@@ -936,7 +936,7 @@ pub struct ClientSdkInfo {
 }
 
 /// Represents a full event for Sentry.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(default)]
 pub struct Event<'a> {
     /// The ID of the event
@@ -1046,6 +1046,187 @@ pub struct Event<'a> {
     /// Additional arbitrary keys for forwards compatibility.
     #[serde(flatten)]
     pub other: Map<String, Value>,
+}
+
+#[cfg(feature = "with_serde")]
+impl<'de> Deserialize<'de> for Event<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        /// A lenient representation of the `Event` struct used for aliasing field names.
+        #[derive(Deserialize)]
+        #[serde(default)]
+        pub struct LenientEvent<'a> {
+            #[serde(rename = "event_id")]
+            pub id: Option<Uuid>,
+            pub level: Level,
+            pub fingerprint: Cow<'a, [Cow<'a, str>]>,
+            pub culprit: Option<String>,
+            pub transaction: Option<String>,
+            pub message: Option<String>,
+            pub logentry: Option<LogEntry>,
+            #[serde(rename = "sentry.interfaces.Message")]
+            pub logentry_iface: Option<LogEntry>,
+            pub logger: Option<String>,
+            pub modules: Map<String, String>,
+            pub platform: Cow<'a, str>,
+            #[serde(with = "ts_seconds_float_opt")]
+            pub timestamp: Option<DateTime<Utc>>,
+            pub server_name: Option<Cow<'a, str>>,
+            pub release: Option<Cow<'a, str>>,
+            pub dist: Option<Cow<'a, str>>,
+            pub repos: Map<String, RepoReference>,
+            pub environment: Option<Cow<'a, str>>,
+            pub user: Option<User>,
+            #[serde(rename = "sentry.interfaces.User")]
+            pub user_iface: Option<User>,
+            pub request: Option<Request>,
+            #[serde(rename = "sentry.interfaces.Http")]
+            pub request_iface: Option<Request>,
+            #[serde(deserialize_with = "deserialize_context")]
+            pub contexts: Map<String, Context>,
+            #[serde(
+                deserialize_with = "deserialize_context", rename = "sentry.interfaces.Contexts"
+            )]
+            pub contexts_iface: Map<String, Context>,
+            pub breadcrumbs: Vec<Breadcrumb>,
+            #[serde(rename = "sentry.interfaces.Breadcrumbs")]
+            pub breadcrumbs_iface: Vec<Breadcrumb>,
+            #[serde(deserialize_with = "deserialize_exceptions", rename = "exception")]
+            pub exceptions: Vec<Exception>,
+            #[serde(
+                deserialize_with = "deserialize_exceptions", rename = "sentry.interfaces.Exception"
+            )]
+            pub exceptions_iface: Vec<Exception>,
+            pub stacktrace: Option<Stacktrace>,
+            #[serde(rename = "sentry.interfaces.Stacktrace")]
+            pub stacktrace_iface: Option<Stacktrace>,
+            #[serde(rename = "template")]
+            pub template_info: Option<TemplateInfo>,
+            #[serde(rename = "sentry.interfaces.Template")]
+            pub template_info_iface: Option<TemplateInfo>,
+            #[serde(deserialize_with = "deserialize_threads")]
+            pub threads: Vec<Thread>,
+            #[serde(rename = "sentry.interfaces.Threads")]
+            pub threads_iface: Vec<Thread>,
+            pub tags: Map<String, String>,
+            pub extra: Map<String, Value>,
+            pub debug_meta: Cow<'a, DebugMeta>,
+            #[serde(rename = "sentry.interfaces.DebugMeta")]
+            pub debug_meta_iface: Cow<'a, DebugMeta>,
+            #[serde(rename = "sdk")]
+            pub sdk_info: Option<Cow<'a, ClientSdkInfo>>,
+            #[serde(flatten)]
+            pub other: Map<String, Value>,
+        }
+
+        impl<'a> Default for LenientEvent<'a> {
+            fn default() -> LenientEvent<'a> {
+                let default = Event::default();
+
+                LenientEvent {
+                    id: default.id,
+                    level: default.level,
+                    fingerprint: default.fingerprint,
+                    culprit: default.culprit,
+                    transaction: default.transaction,
+                    message: default.message,
+                    logentry: default.logentry,
+                    logentry_iface: None,
+                    logger: default.logger,
+                    modules: default.modules,
+                    platform: default.platform,
+                    timestamp: default.timestamp,
+                    server_name: default.server_name,
+                    release: default.release,
+                    dist: default.dist,
+                    repos: default.repos,
+                    environment: default.environment,
+                    user: None,
+                    user_iface: default.user,
+                    request: default.request,
+                    request_iface: None,
+                    contexts: default.contexts,
+                    contexts_iface: Default::default(),
+                    breadcrumbs: default.breadcrumbs,
+                    breadcrumbs_iface: Default::default(),
+                    exceptions: default.exceptions,
+                    exceptions_iface: Default::default(),
+                    stacktrace: default.stacktrace,
+                    stacktrace_iface: None,
+                    template_info: default.template_info,
+                    template_info_iface: None,
+                    threads: default.threads,
+                    threads_iface: Default::default(),
+                    tags: default.tags,
+                    extra: default.extra,
+                    debug_meta: default.debug_meta,
+                    debug_meta_iface: Default::default(),
+                    sdk_info: default.sdk_info,
+                    other: default.other,
+                }
+            }
+        }
+
+        impl<'a> From<LenientEvent<'a>> for Event<'a> {
+            fn from(lenient: LenientEvent) -> Event {
+                Event {
+                    id: lenient.id,
+                    level: lenient.level,
+                    fingerprint: lenient.fingerprint,
+                    culprit: lenient.culprit,
+                    transaction: lenient.transaction,
+                    message: lenient.message,
+                    logentry: lenient.logentry.or(lenient.logentry_iface),
+                    logger: lenient.logger,
+                    modules: lenient.modules,
+                    platform: lenient.platform,
+                    timestamp: lenient.timestamp,
+                    server_name: lenient.server_name,
+                    release: lenient.release,
+                    dist: lenient.dist,
+                    repos: lenient.repos,
+                    environment: lenient.environment,
+                    user: lenient.user.or(lenient.user_iface),
+                    request: lenient.request.or(lenient.request_iface),
+                    contexts: if lenient.contexts.is_empty() {
+                        lenient.contexts_iface
+                    } else {
+                        lenient.contexts
+                    },
+                    breadcrumbs: if lenient.breadcrumbs.is_empty() {
+                        lenient.breadcrumbs_iface
+                    } else {
+                        lenient.breadcrumbs
+                    },
+                    exceptions: if lenient.exceptions.is_empty() {
+                        lenient.exceptions_iface
+                    } else {
+                        lenient.exceptions
+                    },
+                    stacktrace: lenient.stacktrace.or(lenient.stacktrace_iface),
+                    template_info: lenient.template_info.or(lenient.template_info_iface),
+                    threads: if lenient.threads.is_empty() {
+                        lenient.threads_iface
+                    } else {
+                        lenient.threads
+                    },
+                    tags: lenient.tags,
+                    extra: lenient.extra,
+                    debug_meta: if lenient.debug_meta.is_empty() {
+                        lenient.debug_meta_iface
+                    } else {
+                        lenient.debug_meta
+                    },
+                    sdk_info: lenient.sdk_info,
+                    other: lenient.other,
+                }
+            }
+        }
+
+        Ok(LenientEvent::<'de>::deserialize(deserializer)?.into())
+    }
 }
 
 fn is_other(value: &str) -> bool {
