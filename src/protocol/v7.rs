@@ -14,7 +14,7 @@ use std::str;
 use chrono::{DateTime, Utc};
 use debugid::DebugId;
 use serde::de::{Deserialize, Deserializer, Error as DeError};
-use serde::ser::{Error as SerError, Serialize, SerializeMap, Serializer};
+use serde::ser::{Error as SerError, Serialize, Serializer};
 use serde_json::{from_value, to_value};
 use url::Url;
 use url_serde;
@@ -1001,11 +1001,7 @@ pub struct Event<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub request: Option<Request>,
     /// Optional contexts.
-    #[serde(
-        skip_serializing_if = "Map::is_empty",
-        serialize_with = "serialize_context",
-        deserialize_with = "deserialize_context"
-    )]
+    #[serde(skip_serializing_if = "Map::is_empty", with = "serde_context")]
     pub contexts: Map<String, Context>,
     /// List of breadcrumbs to send along.
     #[serde(with = "serde_values", skip_serializing_if = "Vec::is_empty")]
@@ -1075,11 +1071,9 @@ impl<'a, 'de> Deserialize<'de> for Event<'a> {
             pub request: Option<Request>,
             #[serde(rename = "sentry.interfaces.Http")]
             pub request_iface: Option<Request>,
-            #[serde(deserialize_with = "deserialize_context")]
+            #[serde(with = "serde_context")]
             pub contexts: Map<String, Context>,
-            #[serde(
-                deserialize_with = "deserialize_context", rename = "sentry.interfaces.Contexts"
-            )]
+            #[serde(with = "serde_context", rename = "sentry.interfaces.Contexts")]
             pub contexts_iface: Map<String, Context>,
             #[serde(with = "serde_values")]
             pub breadcrumbs: Vec<Breadcrumb>,
@@ -1570,91 +1564,103 @@ where
     }
 }
 
-fn deserialize_context<'de, D>(deserializer: D) -> Result<Map<String, Context>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let raw = <Map<String, Value>>::deserialize(deserializer)?;
-    let mut rv = Map::new();
+#[cfg(feature = "with_serde")]
+mod serde_context {
+    use std::str;
 
-    #[derive(Deserialize)]
-    pub struct Helper<T> {
-        #[serde(flatten)]
-        data: T,
-        #[serde(flatten)]
-        extra: Map<String, Value>,
-    }
+    use serde::de::{Deserialize, Deserializer, Error as DeError};
+    use serde::ser::{Error as SerError, SerializeMap, Serializer};
+    use serde_json::{from_value, to_value};
 
-    for (key, raw_context) in raw {
-        let (ty, data) = match raw_context {
-            Value::Object(mut map) => {
-                let has_type = if let Some(&Value::String(..)) = map.get("type") {
-                    true
-                } else {
-                    false
-                };
-                let ty = if has_type {
-                    map.remove("type")
-                        .and_then(|x| x.as_str().map(|x| x.to_string()))
-                        .unwrap()
-                } else {
-                    key.to_string()
-                };
-                (ty, Value::Object(map))
-            }
-            _ => continue,
-        };
+    use super::{value, AppContext, BrowserContext, Context, ContextData, DeviceContext, Map,
+                OsContext, RuntimeContext, Value};
 
-        macro_rules! convert_context {
-            ($enum:path, $ty:ident) => {{
-                let helper = from_value::<Helper<$ty>>(data).map_err(D::Error::custom)?;
-                ($enum(Box::new(helper.data)), helper.extra)
-            }};
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Map<String, Context>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = <Map<String, Value>>::deserialize(deserializer)?;
+        let mut rv = Map::new();
+
+        #[derive(Deserialize)]
+        pub struct Helper<T> {
+            #[serde(flatten)]
+            data: T,
+            #[serde(flatten)]
+            extra: Map<String, Value>,
         }
 
-        let (data, extra) = match ty.as_str() {
-            "device" => convert_context!(ContextData::Device, DeviceContext),
-            "os" => convert_context!(ContextData::Os, OsContext),
-            "runtime" => convert_context!(ContextData::Runtime, RuntimeContext),
-            "app" => convert_context!(ContextData::App, AppContext),
-            "browser" => convert_context!(ContextData::Browser, BrowserContext),
-            _ => (
-                ContextData::Default,
-                from_value(data).map_err(D::Error::custom)?,
-            ),
-        };
-        rv.insert(key, Context { data, extra });
-    }
+        for (key, raw_context) in raw {
+            let (ty, data) = match raw_context {
+                Value::Object(mut map) => {
+                    let has_type = if let Some(&Value::String(..)) = map.get("type") {
+                        true
+                    } else {
+                        false
+                    };
+                    let ty = if has_type {
+                        map.remove("type")
+                            .and_then(|x| x.as_str().map(|x| x.to_string()))
+                            .unwrap()
+                    } else {
+                        key.to_string()
+                    };
+                    (ty, Value::Object(map))
+                }
+                _ => continue,
+            };
 
-    Ok(rv)
-}
-
-fn serialize_context<S>(value: &Map<String, Context>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let mut map = try!(serializer.serialize_map(None));
-
-    for (key, value) in value {
-        let mut c = if let ContextData::Default = value.data {
-            value::Map::new()
-        } else {
-            match to_value(&value.data).map_err(S::Error::custom)? {
-                Value::Object(map) => map,
-                _ => unreachable!(),
+            macro_rules! convert_context {
+                ($enum:path, $ty:ident) => {{
+                    let helper = from_value::<Helper<$ty>>(data).map_err(D::Error::custom)?;
+                    ($enum(Box::new(helper.data)), helper.extra)
+                }};
             }
-        };
-        c.insert("type".into(), value.data.type_name().into());
-        c.extend(
-            value
-                .extra
-                .iter()
-                .map(|(key, value)| (key.to_string(), value.clone())),
-        );
-        try!(map.serialize_entry(key, &c));
+
+            let (data, extra) = match ty.as_str() {
+                "device" => convert_context!(ContextData::Device, DeviceContext),
+                "os" => convert_context!(ContextData::Os, OsContext),
+                "runtime" => convert_context!(ContextData::Runtime, RuntimeContext),
+                "app" => convert_context!(ContextData::App, AppContext),
+                "browser" => convert_context!(ContextData::Browser, BrowserContext),
+                _ => (
+                    ContextData::Default,
+                    from_value(data).map_err(D::Error::custom)?,
+                ),
+            };
+            rv.insert(key, Context { data, extra });
+        }
+
+        Ok(rv)
     }
 
-    map.end()
+    pub fn serialize<S>(value: &Map<String, Context>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = try!(serializer.serialize_map(None));
+
+        for (key, value) in value {
+            let mut c = if let ContextData::Default = value.data {
+                value::Map::new()
+            } else {
+                match to_value(&value.data).map_err(S::Error::custom)? {
+                    Value::Object(map) => map,
+                    _ => unreachable!(),
+                }
+            };
+            c.insert("type".into(), value.data.type_name().into());
+            c.extend(
+                value
+                    .extra
+                    .iter()
+                    .map(|(key, value)| (key.to_string(), value.clone())),
+            );
+            try!(map.serialize_entry(key, &c));
+        }
+
+        map.end()
+    }
 }
 
 #[cfg(feature = "with_serde")]
