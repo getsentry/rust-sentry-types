@@ -55,20 +55,6 @@ pub use self::map::LinkedHashMap as Map;
 /// arbitrary other fields. All other fields will be collected into `Values::data` when
 /// deserializing and re-serialized in the same place. The shorthand array notation is always
 /// reserialized as object.
-///
-/// ```
-/// # extern crate sentry_types;
-/// # extern crate serde;
-/// # extern crate serde_json;
-/// # use sentry_types::protocol::v7::{Map, Values};
-/// # use serde;
-/// # use serde_json;
-///
-/// assert_eq!(
-///     Values { values: vec![1, 2, 3], data: Map::new() },
-///     serde_json::from_str("[1,2,3]").unwrap()
-/// );
-/// ```
 #[derive(Serialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct Values<T> {
@@ -80,6 +66,7 @@ pub struct Values<T> {
 }
 
 impl<T> Values<T> {
+    /// Creates an empty values struct.
     pub fn new() -> Values<T> {
         Values {
             values: Vec::new(),
@@ -87,6 +74,7 @@ impl<T> Values<T> {
         }
     }
 
+    /// Checks whether this struct is empty in both values and data.
     pub fn is_empty(&self) -> bool {
         self.values.is_empty() && self.data.is_empty()
     }

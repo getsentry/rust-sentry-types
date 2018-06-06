@@ -5,7 +5,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate uuid;
 
-use chrono::{TimeZone, Utc};
+use chrono::{Utc};
 use std::borrow::Cow;
 
 use sentry_types::protocol::v7;
@@ -22,6 +22,7 @@ fn assert_roundtrip(event: &v7::Event) {
 
 mod test_event {
     use super::*;
+    use chrono::TimeZone;
 
     #[test]
     fn test_event_defaults() {
@@ -162,8 +163,8 @@ mod test_values {
         assert_eq!(values, serde_json::from_str("[1,2,3]").unwrap());
         assert_eq!(
             serde_json::to_string(&values).unwrap(),
-            "{\"values\":[1,2,3]}".to_string(),
-        )
+            "{\"values\":[1,2,3]}".to_string()
+        );
     }
 
     #[test]
@@ -180,8 +181,8 @@ mod test_values {
 
         assert_eq!(
             serde_json::to_string(&values).unwrap(),
-            "{\"values\":[1,2,3]}".to_string(),
-        )
+            "{\"values\":[1,2,3]}".to_string()
+        );
     }
 
     #[test]
@@ -202,8 +203,8 @@ mod test_values {
 
         assert_eq!(
             serde_json::to_string(&values).unwrap(),
-            "{\"values\":[1,2,3],\"foo\":\"bar\"}".to_string(),
-        )
+            "{\"values\":[1,2,3],\"foo\":\"bar\"}".to_string()
+        );
     }
 
     #[test]
@@ -270,8 +271,8 @@ mod test_logentry {
                 ..Default::default()
             },
             serde_json::from_str("{\"sentry.interfaces.Message\":{\"message\":\"Hello World!\"}}")
-                .unwrap(),
-        )
+                .unwrap()
+        );
     }
 }
 
@@ -349,6 +350,7 @@ mod test_repos {
 
 mod test_timestamp {
     use super::*;
+    use chrono::TimeZone;
 
     #[test]
     fn test_timestamp_utc() {
@@ -471,6 +473,7 @@ mod test_user {
 
 mod test_breadcrumbs {
     use super::*;
+    use chrono::TimeZone;
 
     fn event() -> v7::Event<'static> {
         v7::Event {
@@ -1618,8 +1621,8 @@ mod test_contexts {
                 ..Default::default()
             },
             serde_json::from_str("{\"sentry.interfaces.Contexts\":{\"os\":{\"type\":\"os\"}}}")
-                .unwrap(),
-        )
+                .unwrap()
+        );
     }
 }
 
