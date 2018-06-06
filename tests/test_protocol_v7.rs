@@ -1,5 +1,4 @@
 extern crate chrono;
-#[macro_use]
 extern crate sentry_types;
 extern crate serde;
 #[macro_use]
@@ -377,7 +376,7 @@ fn test_level_log() {
 #[test]
 fn test_breadcrumbs() {
     let event = v7::Event {
-        breadcrumbs: values![
+        breadcrumbs: vec![
             v7::Breadcrumb {
                 timestamp: Utc.ymd(2017, 12, 24).and_hms_milli(8, 12, 0, 713),
                 category: Some("ui.click".into()),
@@ -397,7 +396,7 @@ fn test_breadcrumbs() {
                 },
                 ..Default::default()
             },
-        ],
+        ].into(),
         ..Default::default()
     };
 
@@ -467,11 +466,11 @@ fn test_template_info() {
 #[test]
 fn test_threads() {
     let event = v7::Event {
-        threads: values![v7::Thread {
+        threads: vec![v7::Thread {
             id: Some("#1".into()),
             name: Some("Awesome Thread".into()),
             ..Default::default()
-        }],
+        }].into(),
         ..Default::default()
     };
 
@@ -482,13 +481,13 @@ fn test_threads() {
     );
 
     let event = v7::Event {
-        threads: values![v7::Thread {
+        threads: vec![v7::Thread {
             id: Some(42.into()),
             name: Some("Awesome Thread".into()),
             crashed: true,
             current: true,
             ..Default::default()
-        }],
+        }].into(),
         ..Default::default()
     };
 
@@ -500,7 +499,7 @@ fn test_threads() {
     );
 
     let event = v7::Event {
-        threads: values![v7::Thread {
+        threads: vec![v7::Thread {
             stacktrace: Some(v7::Stacktrace {
                 frames: vec![v7::Frame {
                     function: Some("main".into()),
@@ -526,7 +525,7 @@ fn test_threads() {
                 ..Default::default()
             }),
             ..Default::default()
-        }],
+        }].into(),
         ..Default::default()
     };
 
@@ -763,7 +762,7 @@ fn test_multi_exception_list() {
 #[test]
 fn test_minimal_exception_stacktrace() {
     let event: v7::Event = v7::Event {
-        exceptions: values![v7::Exception {
+        exceptions: vec![v7::Exception {
             ty: "DivisionByZero".into(),
             value: Some("integer division or modulo by zero".into()),
             module: None,
@@ -781,7 +780,7 @@ fn test_minimal_exception_stacktrace() {
             }),
             raw_stacktrace: None,
             ..Default::default()
-        }],
+        }].into(),
         ..Default::default()
     };
 
@@ -798,7 +797,7 @@ fn test_minimal_exception_stacktrace() {
 #[test]
 fn test_slightly_larger_exception_stacktrace() {
     let event: v7::Event = v7::Event {
-        exceptions: values![v7::Exception {
+        exceptions: vec![v7::Exception {
             ty: "DivisionByZero".into(),
             value: Some("integer division or modulo by zero".into()),
             module: None,
@@ -828,7 +827,7 @@ fn test_slightly_larger_exception_stacktrace() {
             }),
             raw_stacktrace: None,
             ..Default::default()
-        }],
+        }].into(),
         ..Default::default()
     };
 
@@ -847,7 +846,7 @@ fn test_slightly_larger_exception_stacktrace() {
 #[test]
 fn test_full_exception_stacktrace() {
     let event: v7::Event = v7::Event {
-        exceptions: values![v7::Exception {
+        exceptions: vec![v7::Exception {
             ty: "DivisionByZero".into(),
             value: Some("integer division or modulo by zero".into()),
             module: Some("x".into()),
@@ -936,7 +935,7 @@ fn test_full_exception_stacktrace() {
                 ..Default::default()
             }),
             ..Default::default()
-        }],
+        }].into(),
         ..Default::default()
     };
 
@@ -970,13 +969,13 @@ fn test_full_exception_stacktrace() {
 #[test]
 fn test_exception_null() {
     let event: v7::Event = serde_json::from_slice(b"{\"exception\":null}").unwrap();
-    assert_eq!(event.exceptions, values![]);
+    assert_eq!(event.exceptions, Default::default());
 }
 
 #[test]
 fn test_exception_mechanism() {
     let event: v7::Event = v7::Event {
-        exceptions: values![v7::Exception {
+        exceptions: vec![v7::Exception {
             ty: "EXC_BAD_ACCESS".into(),
             value: Some("Attempted to dereference garbage pointer 0x1".into()),
             mechanism: Some(v7::Mechanism {
@@ -1013,7 +1012,7 @@ fn test_exception_mechanism() {
                 },
             }),
             ..Default::default()
-        }],
+        }].into(),
         ..Default::default()
     };
 

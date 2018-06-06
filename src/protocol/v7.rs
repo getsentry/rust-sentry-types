@@ -190,12 +190,6 @@ where
     }
 }
 
-#[macro_export]
-macro_rules! values {
-    ( $( $x:expr ),* ) => ( $crate::protocol::v7::Values::from(vec![ $($x),* ]) );
-    ( $( $x:expr, )* ) => ( values![ $($x),* ] )
-}
-
 /// Represents a log entry message.
 ///
 /// A log message is similar to the `message` attribute on the event itself but
