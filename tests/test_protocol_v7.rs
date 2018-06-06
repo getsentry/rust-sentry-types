@@ -1,4 +1,5 @@
 extern crate chrono;
+#[macro_use]
 extern crate sentry_types;
 extern crate serde;
 #[macro_use]
@@ -376,7 +377,7 @@ fn test_level_log() {
 #[test]
 fn test_breadcrumbs() {
     let event = v7::Event {
-        breadcrumbs: vec![
+        breadcrumbs: values![
             v7::Breadcrumb {
                 timestamp: Utc.ymd(2017, 12, 24).and_hms_milli(8, 12, 0, 713),
                 category: Some("ui.click".into()),
@@ -466,7 +467,7 @@ fn test_template_info() {
 #[test]
 fn test_threads() {
     let event = v7::Event {
-        threads: vec![v7::Thread {
+        threads: values![v7::Thread {
             id: Some("#1".into()),
             name: Some("Awesome Thread".into()),
             ..Default::default()
@@ -481,7 +482,7 @@ fn test_threads() {
     );
 
     let event = v7::Event {
-        threads: vec![v7::Thread {
+        threads: values![v7::Thread {
             id: Some(42.into()),
             name: Some("Awesome Thread".into()),
             crashed: true,
@@ -499,7 +500,7 @@ fn test_threads() {
     );
 
     let event = v7::Event {
-        threads: vec![v7::Thread {
+        threads: values![v7::Thread {
             stacktrace: Some(v7::Stacktrace {
                 frames: vec![v7::Frame {
                     function: Some("main".into()),
@@ -719,7 +720,7 @@ fn test_debug_meta() {
 #[test]
 fn test_canonical_exception() {
     let mut event: v7::Event = Default::default();
-    event.exceptions.push(v7::Exception {
+    event.exceptions.values.push(v7::Exception {
         ty: "ZeroDivisionError".into(),
         ..Default::default()
     });
@@ -739,7 +740,7 @@ fn test_single_exception_inline() {
     let json = "{\"exception\":{\"type\":\"ZeroDivisionError\"}}";
     let event: v7::Event = serde_json::from_str(&json).unwrap();
     let mut ref_event: v7::Event = Default::default();
-    ref_event.exceptions.push(v7::Exception {
+    ref_event.exceptions.values.push(v7::Exception {
         ty: "ZeroDivisionError".into(),
         ..Default::default()
     });
@@ -751,7 +752,7 @@ fn test_multi_exception_list() {
     let json = "{\"exception\":[{\"type\":\"ZeroDivisionError\"}]}";
     let event: v7::Event = serde_json::from_str(&json).unwrap();
     let mut ref_event: v7::Event = Default::default();
-    ref_event.exceptions.push(v7::Exception {
+    ref_event.exceptions.values.push(v7::Exception {
         ty: "ZeroDivisionError".into(),
         ..Default::default()
     });
@@ -762,7 +763,7 @@ fn test_multi_exception_list() {
 #[test]
 fn test_minimal_exception_stacktrace() {
     let event: v7::Event = v7::Event {
-        exceptions: vec![v7::Exception {
+        exceptions: values![v7::Exception {
             ty: "DivisionByZero".into(),
             value: Some("integer division or modulo by zero".into()),
             module: None,
@@ -797,7 +798,7 @@ fn test_minimal_exception_stacktrace() {
 #[test]
 fn test_slightly_larger_exception_stacktrace() {
     let event: v7::Event = v7::Event {
-        exceptions: vec![v7::Exception {
+        exceptions: values![v7::Exception {
             ty: "DivisionByZero".into(),
             value: Some("integer division or modulo by zero".into()),
             module: None,
@@ -846,7 +847,7 @@ fn test_slightly_larger_exception_stacktrace() {
 #[test]
 fn test_full_exception_stacktrace() {
     let event: v7::Event = v7::Event {
-        exceptions: vec![v7::Exception {
+        exceptions: values![v7::Exception {
             ty: "DivisionByZero".into(),
             value: Some("integer division or modulo by zero".into()),
             module: Some("x".into()),
@@ -969,13 +970,13 @@ fn test_full_exception_stacktrace() {
 #[test]
 fn test_exception_null() {
     let event: v7::Event = serde_json::from_slice(b"{\"exception\":null}").unwrap();
-    assert_eq!(event.exceptions, vec![]);
+    assert_eq!(event.exceptions, values![]);
 }
 
 #[test]
 fn test_exception_mechanism() {
     let event: v7::Event = v7::Event {
-        exceptions: vec![v7::Exception {
+        exceptions: values![v7::Exception {
             ty: "EXC_BAD_ACCESS".into(),
             value: Some("Attempted to dereference garbage pointer 0x1".into()),
             mechanism: Some(v7::Mechanism {
