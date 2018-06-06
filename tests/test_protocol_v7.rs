@@ -21,6 +21,74 @@ fn assert_roundtrip(event: &v7::Event) {
 }
 
 #[test]
+fn test_values_array() {
+    let values = v7::Values {
+        values: vec![1, 2, 3],
+        data: v7::Map::new(),
+    };
+
+    assert_eq!(values, serde_json::from_str("[1,2,3]").unwrap());
+    assert_eq!(
+        serde_json::to_string(&values).unwrap(),
+        "{\"values\":[1,2,3]}".to_string(),
+    )
+}
+
+#[test]
+fn test_values_object() {
+    let values = v7::Values {
+        values: vec![1, 2, 3],
+        data: v7::Map::new(),
+    };
+
+    assert_eq!(
+        values,
+        serde_json::from_str("{\"values\":[1,2,3]}").unwrap()
+    );
+
+    assert_eq!(
+        serde_json::to_string(&values).unwrap(),
+        "{\"values\":[1,2,3]}".to_string(),
+    )
+}
+
+#[test]
+fn test_values_additional_data() {
+    let values = v7::Values {
+        values: vec![1, 2, 3],
+        data: {
+            let mut m = v7::Map::new();
+            m.insert("foo".into(), "bar".into());
+            m
+        },
+    };
+
+    assert_eq!(
+        values,
+        serde_json::from_str("{\"values\":[1,2,3],\"foo\":\"bar\"}").unwrap()
+    );
+
+    assert_eq!(
+        serde_json::to_string(&values).unwrap(),
+        "{\"values\":[1,2,3],\"foo\":\"bar\"}".to_string(),
+    )
+}
+
+#[test]
+fn test_values_option() {
+    assert_eq!(
+        None,
+        serde_json::from_str::<Option<v7::Values<u32>>>("null").unwrap()
+    );
+}
+
+#[test]
+fn test_values_empty() {
+    assert!(v7::Values::<u32>::new().is_empty());
+    assert!(!v7::Values::from(vec![1, 2, 3]).is_empty())
+}
+
+#[test]
 fn test_event_default_vs_new() {
     let event_new = reserialize(&v7::Event::new());
     let event_default = reserialize(&Default::default());

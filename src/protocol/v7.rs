@@ -80,14 +80,14 @@ pub struct Values<T> {
 }
 
 impl<T> Values<T> {
-    fn new() -> Values<T> {
+    pub fn new() -> Values<T> {
         Values {
             values: Vec::new(),
             data: Map::new(),
         }
     }
 
-    fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.values.is_empty() && self.data.is_empty()
     }
 }
