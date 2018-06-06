@@ -619,6 +619,7 @@ mod test_template_info {
                     current_line: Some("hey hey hey3".into()),
                     post_lines: vec!["foo4".into(), "bar5".into()],
                 },
+                other: Default::default(),
             }),
             ..Default::default()
         };
@@ -647,6 +648,7 @@ mod test_template_info {
                         current_line: Some("hey hey hey3".into()),
                         post_lines: vec!["foo4".into(), "bar5".into()],
                     },
+                    other: Default::default(),
                 }),
                 ..Default::default()
             },
@@ -1209,7 +1211,7 @@ mod test_exception {
                             let mut m = v7::Map::new();
                             m.insert("zzz".into(), "foo".into());
                             m
-                        }
+                        },
                     }],
                     frames_omitted: Some((1, 2)),
                     registers: {
