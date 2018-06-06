@@ -62,7 +62,7 @@ pub struct Values<T> {
     pub values: Vec<T>,
     /// Additional data passed as fields next to `values`.
     #[serde(flatten)]
-    pub data: Map<String, Value>,
+    pub other: Map<String, Value>,
 }
 
 impl<T> Values<T> {
@@ -70,13 +70,13 @@ impl<T> Values<T> {
     pub fn new() -> Values<T> {
         Values {
             values: Vec::new(),
-            data: Map::new(),
+            other: Map::new(),
         }
     }
 
     /// Checks whether this struct is empty in both values and data.
     pub fn is_empty(&self) -> bool {
-        self.values.is_empty() && self.data.is_empty()
+        self.values.is_empty() && self.other.is_empty()
     }
 }
 
@@ -91,7 +91,7 @@ impl<T> From<Vec<T>> for Values<T> {
     fn from(values: Vec<T>) -> Values<T> {
         Values {
             values,
-            data: Map::new(),
+            other: Map::new(),
         }
     }
 }
@@ -164,14 +164,14 @@ where
             Qualified {
                 values: Vec<T>,
                 #[serde(flatten)]
-                data: Map<String, Value>,
+                other: Map<String, Value>,
             },
             Unqualified(Vec<T>),
             Single(T),
         }
 
         Deserialize::deserialize(deserializer).map(|x| match x {
-            Repr::Qualified { values, data } => Values { values, data },
+            Repr::Qualified { values, other } => Values { values, other },
             Repr::Unqualified(values) => values.into(),
             Repr::Single(value) => vec![value].into(),
         })

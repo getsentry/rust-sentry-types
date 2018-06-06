@@ -157,7 +157,7 @@ mod test_values {
     fn test_values_array() {
         let values = v7::Values {
             values: vec![1, 2, 3],
-            data: v7::Map::new(),
+            other: v7::Map::new(),
         };
 
         assert_eq!(values, serde_json::from_str("[1,2,3]").unwrap());
@@ -171,7 +171,7 @@ mod test_values {
     fn test_values_object() {
         let values = v7::Values {
             values: vec![1, 2, 3],
-            data: v7::Map::new(),
+            other: v7::Map::new(),
         };
 
         assert_eq!(
@@ -189,7 +189,7 @@ mod test_values {
     fn test_values_additional_data() {
         let values = v7::Values {
             values: vec![1, 2, 3],
-            data: {
+            other: {
                 let mut m = v7::Map::new();
                 m.insert("foo".into(), "bar".into());
                 m
