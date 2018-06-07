@@ -8,7 +8,6 @@ use std::borrow::Cow;
 use std::cmp;
 use std::fmt;
 use std::net::{AddrParseError, IpAddr};
-use std::num::ParseIntError;
 use std::str;
 
 use chrono::{DateTime, Utc};
