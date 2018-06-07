@@ -166,9 +166,21 @@ mod tests {
 
     #[test]
     fn test_hex_deserialize_owned() {
-        assert_eq!(Hex(0), serde_json::from_reader(Cursor::new("\"0\"")).unwrap());
-        assert_eq!(Hex(42), serde_json::from_reader(Cursor::new("\"42\"")).unwrap());
-        assert_eq!(Hex(42), serde_json::from_reader(Cursor::new("\"0x2a\"")).unwrap());
-        assert_eq!(Hex(42), serde_json::from_reader(Cursor::new("\"0X2A\"")).unwrap());
+        assert_eq!(
+            Hex(0),
+            serde_json::from_reader(Cursor::new("\"0\"")).unwrap()
+        );
+        assert_eq!(
+            Hex(42),
+            serde_json::from_reader(Cursor::new("\"42\"")).unwrap()
+        );
+        assert_eq!(
+            Hex(42),
+            serde_json::from_reader(Cursor::new("\"0x2a\"")).unwrap()
+        );
+        assert_eq!(
+            Hex(42),
+            serde_json::from_reader(Cursor::new("\"0X2A\"")).unwrap()
+        );
     }
 }
