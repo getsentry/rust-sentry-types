@@ -176,13 +176,13 @@ mod test_fingerprint {
     }
 
     #[test]
-    fn test_fingerprint_float_trunc() {
+    fn test_fingerprint_float() {
         assert_eq!(
             v7::Event {
                 fingerprint: Cow::Borrowed(&["3".into()]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":[3.1415926]}").unwrap()
+            serde_json::from_str("{\"fingerprint\":[3.0]}").unwrap()
         )
     }
 
@@ -238,6 +238,17 @@ mod test_fingerprint {
                 ..Default::default()
             },
             serde_json::from_str("{\"fingerprint\":\"toplevel\"}").unwrap()
+        )
+    }
+
+    #[test]
+    fn test_fingerprint_float_bounds() {
+        assert_eq!(
+            v7::Event {
+                fingerprint: Cow::Borrowed(&["a".into()]),
+                ..Default::default()
+            },
+            serde_json::from_str("{\"fingerprint\":[\"a\",1.7976931348623157e+308]}").unwrap()
         )
     }
 }

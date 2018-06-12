@@ -1398,7 +1398,9 @@ fn collect_fingerprint<'a>(fingerprint: &mut Vec<Cow<'a, str>>, value: Value) {
             } else if let Some(i) = n.as_i64() {
                 fingerprint.push(i.to_string().into());
             } else if let Some(f) = n.as_f64() {
-                fingerprint.push(f.trunc().to_string().into());
+                if f.trunc() as i64 as f64 == f {
+                    fingerprint.push(f.trunc().to_string().into());
+                }
             }
         }
         Value::Array(values) => {
