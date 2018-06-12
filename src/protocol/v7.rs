@@ -1110,9 +1110,7 @@ pub struct Event<'a> {
     #[serde(skip_serializing_if = "Level::is_error")]
     pub level: Level,
     /// An optional fingerprint configuration to override the default.
-    #[serde(
-        skip_serializing_if = "is_default_fingerprint", deserialize_with = "deserialize_fingerprint"
-    )]
+    #[serde(skip_serializing_if = "is_default_fingerprint")]
     pub fingerprint: Cow<'a, [Cow<'a, str>]>,
     /// The culprit of the event.
     #[serde(skip_serializing_if = "Option::is_none")]
