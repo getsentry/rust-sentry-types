@@ -160,7 +160,7 @@ mod test_fingerprint {
                 fingerprint: Cow::Borrowed(&["fingerprint".into()]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":[\"fingerprint\"]}").unwrap(),
+            serde_json::from_str("{\"fingerprint\":[\"fingerprint\"]}").unwrap()
         )
     }
 
@@ -171,7 +171,7 @@ mod test_fingerprint {
                 fingerprint: Cow::Borrowed(&["-22".into()]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":[-22]}").unwrap(),
+            serde_json::from_str("{\"fingerprint\":[-22]}").unwrap()
         )
     }
 
@@ -182,7 +182,7 @@ mod test_fingerprint {
                 fingerprint: Cow::Borrowed(&["3".into()]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":[3.1415926]}").unwrap(),
+            serde_json::from_str("{\"fingerprint\":[3.1415926]}").unwrap()
         )
     }
 
@@ -193,7 +193,7 @@ mod test_fingerprint {
                 fingerprint: Cow::Borrowed(&["a".into(), "b".into(), "c".into(), "d".into()]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":[\"a\",[\"b\",[\"c\"]],\"d\"]}").unwrap(),
+            serde_json::from_str("{\"fingerprint\":[\"a\",[\"b\",[\"c\"]],\"d\"]}").unwrap()
         )
     }
 
@@ -204,7 +204,7 @@ mod test_fingerprint {
                 fingerprint: Cow::Borrowed(&["a".into(), "d".into()]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":[\"a\",{\"b\":\"c\"},\"d\"]}").unwrap(),
+            serde_json::from_str("{\"fingerprint\":[\"a\",{\"b\":\"c\"},\"d\"]}").unwrap()
         )
     }
 
@@ -215,7 +215,7 @@ mod test_fingerprint {
                 fingerprint: Cow::Borrowed(&["a".into(), "b".into()]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":[\"a\",null,\"b\"]}").unwrap(),
+            serde_json::from_str("{\"fingerprint\":[\"a\",null,\"b\"]}").unwrap()
         )
     }
 
@@ -226,7 +226,7 @@ mod test_fingerprint {
                 fingerprint: Cow::Borrowed(&["{{ default }}".into()]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":[null, {}, [[]]]}").unwrap(),
+            serde_json::from_str("{\"fingerprint\":[null, {}, [[]]]}").unwrap()
         )
     }
 
@@ -237,7 +237,7 @@ mod test_fingerprint {
                 fingerprint: Cow::Borrowed(&["toplevel".into()]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":\"toplevel\"}").unwrap(),
+            serde_json::from_str("{\"fingerprint\":\"toplevel\"}").unwrap()
         )
     }
 }
