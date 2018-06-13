@@ -215,7 +215,7 @@ mod test_fingerprint {
                 fingerprint: Cow::Borrowed(&[]),
                 ..Default::default()
             },
-            serde_json::from_str("{\"fingerprint\":[1e100]}").unwrap()
+            serde_json::from_str("{\"fingerprint\":[-1e100]}").unwrap()
         )
     }
 

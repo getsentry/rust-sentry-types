@@ -1403,7 +1403,7 @@ where
                     } else if let Some(i) = n.as_i64() {
                         Some(i.to_string().into())
                     } else if let Some(f) = n.as_f64() {
-                        if f < (1i64 << 53) as f64 {
+                        if f.abs() < (1i64 << 53) as f64 {
                             Some(f.trunc().to_string().into())
                         } else {
                             None
