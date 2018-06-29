@@ -106,7 +106,9 @@ mod annotated {
     use super::meta::ValueMeta;
     use super::schema::Values;
     use super::unexpected::UnexpectedType;
+    use protocol::paths::Path;
 
+    use std::rc::Rc;
     use chrono::{DateTime, Utc};
     use serde::{Deserialize, Deserializer};
     use serde_json::{self, Value};
@@ -123,9 +125,18 @@ mod annotated {
     pub struct Annotated<T> {
         pub value: Option<T>,
         pub meta: ValueMeta,
+        pub path: Option<String>,
     }
 
     impl<T> Annotated<T> {
+        fn new(value: T) -> Self {
+            Annotated {
+                value: Some(value),
+                meta: Default::default(),
+                path: None,
+            }
+        }
+
         pub fn error(message: String) -> Self {
             Annotated {
                 value: None,
@@ -133,34 +144,23 @@ mod annotated {
                     errors: vec![message.into()],
                     ..Default::default()
                 },
-            }
-        }
-    }
-
-    impl<T> From<T> for Annotated<T> {
-        fn from(value: T) -> Self {
-            Annotated {
-                value: Some(value),
-                meta: Default::default(),
-            }
-        }
-    }
-
-    impl<T> From<Maybe<T>> for Annotated<T> {
-        fn from(maybe: Maybe<T>) -> Annotated<T> {
-            match maybe {
-                Maybe::Valid(value) => Annotated::from(value),
-                Maybe::Invalid(u) => Annotated::error(format!("unexpected {}", u.0)),
+                path: None,
             }
         }
     }
 
     impl<'de, T> Deserialize<'de> for Annotated<T>
     where
-        T: Deserialize<'de>,
+        T: Deserialize<'de>
     {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-            Ok(Maybe::deserialize(deserializer)?.into())
+            let path = deserializer.get_state::<Rc<Path>>().map(|x| x.to_string());
+            let mut annotated: Self = match Maybe::deserialize(deserializer)? {
+                Maybe::Valid(value) => Annotated::new(value),
+                Maybe::Invalid(u) => Annotated::error(format!("unexpected {}", u.0)),
+            };
+            annotated.path = path;
+            Ok(annotated)
         }
     }
     impl<T> Default for Annotated<T> {
@@ -168,6 +168,7 @@ mod annotated {
             Annotated {
                 value: None,
                 meta: Default::default(),
+                path: None,
             }
         }
     }
@@ -202,7 +203,19 @@ mod annotated {
 mod annotated_tests {
     use super::annotated::{Annotated, Event, EventMeta, EventMetaHelper};
     use super::meta::ValueMeta;
+    use protocol::paths;
     use serde_json;
+
+    #[test]
+    fn test_annotated() {
+        let json = r#"{
+            "event_id": "864ee97977bf43ac96d74f7486d138ab",
+            "breadcrumbs": {"values":[]}
+        }"#;
+        let jd = &mut serde_json::Deserializer::from_str(json);
+        let e: Annotated<Event> = paths::deserialize(jd).unwrap();
+        assert_eq!(e.value.unwrap().id.path, Some("event_id".to_string()));
+    }
 
     #[test]
     fn test_foo() {
@@ -287,113 +300,6 @@ mod annotated_tests {
 
         // panic!();
     }
-}
-
-#[cfg(feature = "blabla")]
-mod de {
-    use super::meta::{EventMeta, ValueError, ValueMeta};
-    use super::schema::Event;
-    use super::unexpected::UnexpectedType;
-    use serde::de::{Deserialize, Deserializer, Visitor};
-
-    #[derive(Debug, Deserialize)]
-    #[serde(untagged)]
-    enum Maybe<T> {
-        Valid(T),
-        Invalid(UnexpectedType),
-    }
-
-    #[derive(Debug, Default)]
-    struct Annotated<T> {
-        pub value: T,
-        pub meta: ValueMeta,
-    }
-
-    impl<T> Annotated<T>
-    where
-        T: Default,
-    {
-        fn err_default(message: String) -> Self {
-            Annotated {
-                value: Default::default(),
-                meta: ValueMeta {
-                    errors: vec![message.into()],
-                    ..Default::default()
-                },
-            }
-        }
-    }
-
-    impl<T> From<T> for Annotated<T> {
-        fn from(value: T) -> Self {
-            Annotated {
-                value,
-                meta: Default::default(),
-            }
-        }
-    }
-
-    impl<T> From<Maybe<T>> for Annotated<T>
-    where
-        T: Default,
-    {
-        fn from(maybe: Maybe<T>) -> Annotated<T> {
-            match maybe {
-                Maybe::Valid(value) => Annotated::from(value),
-                Maybe::Invalid(u) => Annotated::err_default(format!("unexpected {}", u.0)),
-            }
-        }
-    }
-
-    impl<'de, T> Deserialize<'de> for Annotated<T>
-    where
-        T: Deserialize<'de> + Default,
-    {
-        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-            Ok(Maybe::deserialize(deserializer)?.into())
-        }
-    }
-
-    struct AnnotatedDeserializer<'de, D: Deserializer<'de>> {
-        inner: D,
-        meta: EventMeta,
-        _ph: ::std::marker::PhantomData<&'de u32>,
-    }
-
-    impl<'de, D: Deserializer<'de>> AnnotatedDeserializer<'de, D> {
-        pub fn new(inner: D) -> Self {
-            AnnotatedDeserializer {
-                inner,
-                meta: Default::default(),
-                _ph: ::std::marker::PhantomData,
-            }
-        }
-
-        pub fn meta(self) -> EventMeta {
-            self.meta
-        }
-    }
-
-    #[derive(Debug, Default)]
-    struct Foo<T>(T, EventMeta);
-
-    impl<'de, T> Deserialize<'de> for Foo<T>
-    where
-        T: Deserialize<'de>,
-    {
-        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-            // let annotated_de = AnnotatedDeserializer::new(deserializer);
-            // let res = T::deserialize(annotated_de)?;
-            // Ok(Foo(res, annotated_de.meta()))
-            unimplemented!();
-        }
-    }
-
-    // impl<'de> Deserialize<'de> for Annotated<Event> {
-    //     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-    //         Value::deserialize(deserializer)?.into()
-    //     }
-    // }
 }
 
 mod unexpected {

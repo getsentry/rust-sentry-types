@@ -1,63 +1,48 @@
+use std::rc::Rc;
+use std::any::{Any, TypeId};
 use serde::de::{self, Deserialize, DeserializeSeed, Visitor};
 use std::fmt::{self, Display};
 
-pub trait Process<C> {
-    fn process(&mut self, path: &Path, ctx: &mut C);
-}
-
 /// Entry point. See crate documentation for an example.
-pub fn deserialize<'de, D, F, T, C>(deserializer: D, ctx: &mut C) -> Result<T, D::Error>
+pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
     D: de::Deserializer<'de>,
-    T: Deserialize<'de> + Process<C>,
+    T: Deserialize<'de>,
 {
-    T::deserialize(Deserializer::new(deserializer, ctx))
+    T::deserialize(Deserializer::new(deserializer))
 }
 
-/// Deserializer adapter that invokes a ctx with the path to every unused
-/// field of the input.
-pub struct Deserializer<'a, 'b, D, C: 'b> {
+pub struct Deserializer<D> {
     de: D,
-    ctx: &'b mut C,
-    path: Path<'a>,
+    path: Rc<Path>,
 }
 
-impl<'a, 'b, D, C: 'b> Deserializer<'a, 'b, D, C> {
-    // The structs in this crate all hold their closure by &mut F. If they were
-    // to contain F by value, any method taking &mut self (for example
-    // SeqAccess::next_element_seed) would be forced to recurse with &mut
-    // self.ctx, even if F is instantiated with a &mut already. This way
-    // they contain &mut F and the &mut self methods can recurse with
-    // self.ctx unchanged. This avoids blowing the recursion limit in
-    // Cargo's use of this crate.
-    //
-    // https://github.com/dtolnay/serde-ignored/pull/1
-    pub fn new(de: D, ctx: &'b mut C) -> Self {
+impl<D> Deserializer<D> {
+    pub fn new(de: D) -> Self {
         Deserializer {
             de: de,
-            ctx,
-            path: Path::Root,
+            path: Rc::new(Path::Root),
         }
     }
 }
 
 /// Path to the current value in the input, like `dependencies.serde.typo1`.
-pub enum Path<'a> {
+pub enum Path {
     Root,
-    Seq { parent: &'a Path<'a>, index: usize },
-    Map { parent: &'a Path<'a>, key: String },
-    Some { parent: &'a Path<'a> },
-    NewtypeStruct { parent: &'a Path<'a> },
-    NewtypeVariant { parent: &'a Path<'a> },
+    Seq { parent: Rc<Path>, index: usize },
+    Map { parent: Rc<Path>, key: String },
+    Some { parent: Rc<Path> },
+    NewtypeStruct { parent: Rc<Path> },
+    NewtypeVariant { parent: Rc<Path> },
 }
 
-impl<'a> Display for Path<'a> {
+impl Display for Path {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        struct Parent<'a>(&'a Path<'a>);
+        struct Parent<'a>(&'a Rc<Path>);
 
         impl<'a> Display for Parent<'a> {
             fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-                match *self.0 {
+                match **self.0 {
                     Path::Root => Ok(()),
                     ref path => write!(formatter, "{}.", path),
                 }
@@ -66,29 +51,37 @@ impl<'a> Display for Path<'a> {
 
         match *self {
             Path::Root => formatter.write_str("."),
-            Path::Seq { parent, index } => write!(formatter, "{}{}", Parent(parent), index),
-            Path::Map { parent, ref key } => write!(formatter, "{}{}", Parent(parent), key),
-            Path::Some { parent }
-            | Path::NewtypeStruct { parent }
-            | Path::NewtypeVariant { parent } => write!(formatter, "{}?", Parent(parent)),
+            Path::Seq { ref parent, index } => write!(formatter, "{}{}", Parent(parent), index),
+            Path::Map { ref parent, ref key } => write!(formatter, "{}{}", Parent(parent), key),
+            Path::Some { ref parent }
+            | Path::NewtypeStruct { ref parent }
+            | Path::NewtypeVariant { ref parent } => write!(formatter, "{}?", Parent(parent)),
         }
     }
 }
 
-/// Plain old forwarding impl except for `deserialize_ignored_any` which invokes
-/// the ctx.
-impl<'a, 'b, 'de, D, C: 'b> de::Deserializer<'de> for Deserializer<'a, 'b, D, C>
+impl<'de, D> de::Deserializer<'de> for Deserializer<D>
 where
     D: de::Deserializer<'de>,
 {
     type Error = D::Error;
+
+    fn get_state<T: 'static>(&self) -> Option<&T> {
+        println!("get state of path deserializer");
+        if TypeId::of::<T>() == TypeId::of::<Rc<Path>>() {
+            println!("  returning path");
+            (&*self.path as &(Any + 'static)).downcast_ref()
+        } else {
+            None
+        }
+    }
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, D::Error>
     where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_any(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_any(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -96,7 +89,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_bool(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_bool(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -104,7 +97,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_u8(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_u8(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -112,7 +105,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_u16(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_u16(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -120,7 +113,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_u32(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_u32(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -128,7 +121,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_u64(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_u64(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -136,7 +129,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_i8(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_i8(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -144,7 +137,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_i16(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_i16(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -152,7 +145,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_i32(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_i32(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -160,7 +153,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_i64(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_i64(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -168,7 +161,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_f32(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_f32(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -176,7 +169,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_f64(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_f64(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -184,7 +177,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_char(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_char(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -192,7 +185,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_str(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_str(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -200,7 +193,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_string(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_string(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -208,7 +201,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_bytes(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_bytes(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -216,7 +209,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_byte_buf(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_byte_buf(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -224,7 +217,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_option(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_option(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -232,7 +225,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_unit(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_unit(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_unit_struct<V>(
@@ -244,7 +237,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_unit_struct(name, Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_unit_struct(name, Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_newtype_struct<V>(
@@ -256,7 +249,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_newtype_struct(name, Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_newtype_struct(name, Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -264,7 +257,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_seq(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_seq(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, D::Error>
@@ -272,7 +265,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_tuple(len, Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_tuple(len, Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_tuple_struct<V>(
@@ -285,7 +278,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_tuple_struct(name, len, Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_tuple_struct(name, len, Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -293,7 +286,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_map(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_map(Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_struct<V>(
@@ -306,7 +299,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_struct(name, fields, Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_struct(name, fields, Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_enum<V>(
@@ -319,15 +312,13 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_enum(name, variants, Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_enum(name, variants, Wrap::new(visitor, &self.path))
     }
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, D::Error>
     where
         V: Visitor<'de>,
     {
-        // (self.ctx)(self.path);
-
         self.de.deserialize_ignored_any(visitor)
     }
 
@@ -336,33 +327,30 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_identifier(Wrap::new(visitor, self.ctx, &self.path))
+            .deserialize_identifier(Wrap::new(visitor, &self.path))
     }
 }
 
 /// Wrapper that attaches context to a `Visitor`, `SeqAccess`, `EnumAccess` or
 /// `VariantAccess`.
-struct Wrap<'a, 'b, X, C: 'b> {
+struct Wrap<X> {
     delegate: X,
-    ctx: &'b mut C,
-    path: &'a Path<'a>,
+    path: Rc<Path>,
 }
 
-impl<'a, 'b, X, C> Wrap<'a, 'b, X, C> {
-    fn new(delegate: X, ctx: &'b mut C, path: &'a Path<'a>) -> Self {
+impl<X> Wrap<X> {
+    fn new(delegate: X, path: &Rc<Path>) -> Self {
         Wrap {
             delegate: delegate,
-            ctx: ctx,
-            path: path,
+            path: path.clone(),
         }
     }
 }
 
 /// Forwarding impl to preserve context.
-impl<'a, 'b, 'de, X, C> Visitor<'de> for Wrap<'a, 'b, X, C>
+impl<'de, X> Visitor<'de> for Wrap<X>
 where
     X: Visitor<'de>,
-    C: 'b,
 {
     type Value = X::Value;
 
@@ -495,8 +483,7 @@ where
     {
         self.delegate.visit_some(Deserializer {
             de: deserializer,
-            ctx: self.ctx,
-            path: Path::Some { parent: self.path },
+            path: Rc::new(Path::Some { parent: self.path.clone() }),
         })
     }
 
@@ -506,8 +493,7 @@ where
     {
         self.delegate.visit_newtype_struct(Deserializer {
             de: deserializer,
-            ctx: self.ctx,
-            path: Path::NewtypeStruct { parent: self.path },
+            path: Rc::new(Path::NewtypeStruct { parent: self.path.clone() }),
         })
     }
 
@@ -516,7 +502,7 @@ where
         V: de::SeqAccess<'de>,
     {
         self.delegate
-            .visit_seq(SeqAccess::new(visitor, self.ctx, self.path))
+            .visit_seq(SeqAccess::new(visitor, &self.path))
     }
 
     fn visit_map<V>(self, visitor: V) -> Result<Self::Value, V::Error>
@@ -524,7 +510,7 @@ where
         V: de::MapAccess<'de>,
     {
         self.delegate
-            .visit_map(MapAccess::new(visitor, self.ctx, self.path))
+            .visit_map(MapAccess::new(visitor, &self.path))
     }
 
     fn visit_enum<V>(self, visitor: V) -> Result<Self::Value, V::Error>
@@ -532,7 +518,7 @@ where
         V: de::EnumAccess<'de>,
     {
         self.delegate
-            .visit_enum(Wrap::new(visitor, self.ctx, self.path))
+            .visit_enum(Wrap::new(visitor, &self.path))
     }
 
     fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
@@ -558,27 +544,26 @@ where
 }
 
 /// Forwarding impl to preserve context.
-impl<'a, 'b, 'de, X: 'a, C: 'b> de::EnumAccess<'de> for Wrap<'a, 'b, X, C>
+impl<'de, X> de::EnumAccess<'de> for Wrap<X>
 where
     X: de::EnumAccess<'de>,
 {
     type Error = X::Error;
-    type Variant = Wrap<'a, 'b, X::Variant, C>;
+    type Variant = Wrap<X::Variant>;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), X::Error>
     where
         V: DeserializeSeed<'de>,
     {
-        let ctx = self.ctx;
-        let path = self.path;
+        let path = &self.path;
         self.delegate
             .variant_seed(seed)
-            .map(move |(v, vis)| (v, Wrap::new(vis, ctx, path)))
+            .map(move |(v, vis)| (v, Wrap::new(vis, path)))
     }
 }
 
 /// Forwarding impl to preserve context.
-impl<'a, 'b, 'de, X, C: 'b> de::VariantAccess<'de> for Wrap<'a, 'b, X, C>
+impl<'de, X> de::VariantAccess<'de> for Wrap<X>
 where
     X: de::VariantAccess<'de>,
 {
@@ -592,9 +577,9 @@ where
     where
         T: DeserializeSeed<'de>,
     {
-        let path = Path::NewtypeVariant { parent: self.path };
+        let path = Rc::new(Path::NewtypeVariant { parent: self.path.clone() });
         self.delegate
-            .newtype_variant_seed(TrackedSeed::new(seed, self.ctx, path))
+            .newtype_variant_seed(TrackedSeed::new(seed, path))
     }
 
     fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, X::Error>
@@ -602,7 +587,7 @@ where
         V: Visitor<'de>,
     {
         self.delegate
-            .tuple_variant(len, Wrap::new(visitor, self.ctx, self.path))
+            .tuple_variant(len, Wrap::new(visitor, &self.path))
     }
 
     fn struct_variant<V>(
@@ -614,7 +599,7 @@ where
         V: Visitor<'de>,
     {
         self.delegate
-            .struct_variant(fields, Wrap::new(visitor, self.ctx, self.path))
+            .struct_variant(fields, Wrap::new(visitor, &self.path))
     }
 }
 
@@ -656,6 +641,10 @@ where
     X: de::Deserializer<'de>,
 {
     type Error = X::Error;
+
+    fn get_state<T: 'static>(&self) -> Option<&T> {
+        self.delegate.get_state()
+    }
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, X::Error>
     where
@@ -1105,23 +1094,21 @@ where
 
 /// Seed used for map values, sequence elements and newtype variants to track
 /// their path.
-struct TrackedSeed<'a, X, C: 'a> {
+struct TrackedSeed<X> {
     seed: X,
-    ctx: &'a mut C,
-    path: Path<'a>,
+    path: Rc<Path>,
 }
 
-impl<'a, X, C> TrackedSeed<'a, X, C> {
-    fn new(seed: X, ctx: &'a mut C, path: Path<'a>) -> Self {
+impl<X> TrackedSeed<X> {
+    fn new(seed: X, path: Rc<Path>) -> Self {
         TrackedSeed {
             seed: seed,
-            ctx: ctx,
             path: path,
         }
     }
 }
 
-impl<'a, 'de, X, C> DeserializeSeed<'de> for TrackedSeed<'a, X, C>
+impl<'de, X> DeserializeSeed<'de> for TrackedSeed<X>
 where
     X: DeserializeSeed<'de>,
 {
@@ -1133,33 +1120,30 @@ where
     {
         self.seed.deserialize(Deserializer {
             de: deserializer,
-            ctx: self.ctx,
             path: self.path,
         })
     }
 }
 
 /// Seq visitor that tracks the index of its elements.
-struct SeqAccess<'a, 'b, X, C: 'b> {
+struct SeqAccess<X> {
     delegate: X,
-    ctx: &'b mut C,
-    path: &'a Path<'a>,
+    path: Rc<Path>,
     index: usize,
 }
 
-impl<'a, 'b, X, C> SeqAccess<'a, 'b, X, C> {
-    fn new(delegate: X, ctx: &'b mut C, path: &'a Path<'a>) -> Self {
+impl<X> SeqAccess<X> {
+    fn new(delegate: X, path: &Rc<Path>) -> Self {
         SeqAccess {
             delegate: delegate,
-            ctx: ctx,
-            path: path,
+            path: path.clone(),
             index: 0,
         }
     }
 }
 
 /// Forwarding impl to preserve context.
-impl<'a, 'b, 'de, X, C: 'b> de::SeqAccess<'de> for SeqAccess<'a, 'b, X, C>
+impl<'de, X> de::SeqAccess<'de> for SeqAccess<X>
 where
     X: de::SeqAccess<'de>,
 {
@@ -1169,13 +1153,13 @@ where
     where
         T: DeserializeSeed<'de>,
     {
-        let path = Path::Seq {
-            parent: self.path,
+        let path = Rc::new(Path::Seq {
+            parent: self.path.clone(),
             index: self.index,
-        };
+        });
         self.index += 1;
         self.delegate
-            .next_element_seed(TrackedSeed::new(seed, self.ctx, path))
+            .next_element_seed(TrackedSeed::new(seed, path))
     }
 
     fn size_hint(&self) -> Option<usize> {
@@ -1185,19 +1169,17 @@ where
 
 /// Map visitor that captures the string value of its keys and uses that to
 /// track the path to its values.
-struct MapAccess<'a, 'b, X, C: 'b> {
+struct MapAccess<X> {
     delegate: X,
-    ctx: &'b mut C,
-    path: &'a Path<'a>,
+    path: Rc<Path>,
     key: Option<String>,
 }
 
-impl<'a, 'b, X, C: 'b> MapAccess<'a, 'b, X, C> {
-    fn new(delegate: X, ctx: &'b mut C, path: &'a Path<'a>) -> Self {
+impl<X> MapAccess<X> {
+    fn new(delegate: X, path: &Rc<Path>) -> Self {
         MapAccess {
             delegate: delegate,
-            ctx: ctx,
-            path: path,
+            path: path.clone(),
             key: None,
         }
     }
@@ -1210,7 +1192,7 @@ impl<'a, 'b, X, C: 'b> MapAccess<'a, 'b, X, C> {
     }
 }
 
-impl<'a, 'b, 'de, X, C: 'b> de::MapAccess<'de> for MapAccess<'a, 'b, X, C>
+impl<'de, X> de::MapAccess<'de> for MapAccess<X>
 where
     X: de::MapAccess<'de>,
 {
@@ -1228,12 +1210,12 @@ where
     where
         V: DeserializeSeed<'de>,
     {
-        let path = Path::Map {
-            parent: self.path,
+        let path = Rc::new(Path::Map {
+            parent: self.path.clone(),
             key: self.key()?,
-        };
+        });
         self.delegate
-            .next_value_seed(TrackedSeed::new(seed, self.ctx, path))
+            .next_value_seed(TrackedSeed::new(seed, path))
     }
 
     fn size_hint(&self) -> Option<usize> {
