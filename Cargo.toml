@@ -28,8 +28,9 @@ failure_derive = "0.1.1"
 url = "1.7.0"
 serde = { version = "1.0.50", optional = true }
 serde_derive = { version = "1.0.50", optional = true }
+proc-macro2 = { version = "0.4", features = ["nightly"] }
 serde_derive_internals = { version = "0.23.1", optional = true }
-serde_json = { version = "1.0.17", features = ["preserve_order"], optional = true }
+serde_json = { version = "1.0.22", features = ["preserve_order"], optional = true }
 url_serde = { version = "0.2.0", optional = true }
 chrono = "0.4.2"
 uuid = { version = "0.6.3", features = ["v4"] }

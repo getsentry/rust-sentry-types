@@ -154,7 +154,10 @@ mod annotated {
         T: Deserialize<'de>
     {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-            let path = deserializer.get_state::<Rc<Path>>().map(|x| x.to_string());
+            let path = {
+                let state = deserializer.state();
+                state.with(|value: Option<&Rc<Path>>| value.map(|x| x.to_string()))
+            };
             let mut annotated: Self = match Maybe::deserialize(deserializer)? {
                 Maybe::Valid(value) => Annotated::new(value),
                 Maybe::Invalid(u) => Annotated::error(format!("unexpected {}", u.0)),

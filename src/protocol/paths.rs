@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::any::{Any, TypeId};
-use serde::de::{self, Deserialize, DeserializeSeed, Visitor};
+use serde::de::{self, Deserialize, DeserializeSeed, Visitor, State};
 use std::fmt::{self, Display};
 
 /// Entry point. See crate documentation for an example.
@@ -12,16 +12,27 @@ where
     T::deserialize(Deserializer::new(deserializer))
 }
 
+fn state_with_parent_path<F: FnOnce(Rc<Path>) -> Rc<Path>>(state: &State, f: F) -> State {
+    let mut rv = state.clone();
+    let parent = state.with(|parent: Option<&Rc<Path>>| {
+        parent.map(|x| x.clone())
+    }).unwrap_or_else(|| Rc::new(Path::Root));
+    rv.set(f(parent));
+    rv
+}
+
 pub struct Deserializer<D> {
     de: D,
-    path: Rc<Path>,
+    state: State,
 }
 
 impl<D> Deserializer<D> {
     pub fn new(de: D) -> Self {
+        let mut state = State::empty().clone();
+        state.set(Rc::new(Path::Root));
         Deserializer {
             de: de,
-            path: Rc::new(Path::Root),
+            state: state,
         }
     }
 }
@@ -66,14 +77,8 @@ where
 {
     type Error = D::Error;
 
-    fn get_state<T: 'static>(&self) -> Option<&T> {
-        println!("get state of path deserializer");
-        if TypeId::of::<T>() == TypeId::of::<Rc<Path>>() {
-            println!("  returning path");
-            (&*self.path as &(Any + 'static)).downcast_ref()
-        } else {
-            None
-        }
+    fn state(&self) -> &State {
+        &self.state
     }
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -81,7 +86,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_any(Wrap::new(visitor, &self.path))
+            .deserialize_any(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -89,7 +94,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_bool(Wrap::new(visitor, &self.path))
+            .deserialize_bool(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -97,7 +102,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_u8(Wrap::new(visitor, &self.path))
+            .deserialize_u8(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -105,7 +110,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_u16(Wrap::new(visitor, &self.path))
+            .deserialize_u16(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -113,7 +118,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_u32(Wrap::new(visitor, &self.path))
+            .deserialize_u32(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -121,7 +126,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_u64(Wrap::new(visitor, &self.path))
+            .deserialize_u64(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -129,7 +134,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_i8(Wrap::new(visitor, &self.path))
+            .deserialize_i8(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -137,7 +142,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_i16(Wrap::new(visitor, &self.path))
+            .deserialize_i16(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -145,7 +150,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_i32(Wrap::new(visitor, &self.path))
+            .deserialize_i32(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -153,7 +158,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_i64(Wrap::new(visitor, &self.path))
+            .deserialize_i64(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -161,7 +166,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_f32(Wrap::new(visitor, &self.path))
+            .deserialize_f32(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -169,7 +174,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_f64(Wrap::new(visitor, &self.path))
+            .deserialize_f64(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -177,7 +182,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_char(Wrap::new(visitor, &self.path))
+            .deserialize_char(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -185,7 +190,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_str(Wrap::new(visitor, &self.path))
+            .deserialize_str(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -193,7 +198,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_string(Wrap::new(visitor, &self.path))
+            .deserialize_string(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -201,7 +206,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_bytes(Wrap::new(visitor, &self.path))
+            .deserialize_bytes(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -209,7 +214,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_byte_buf(Wrap::new(visitor, &self.path))
+            .deserialize_byte_buf(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -217,7 +222,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_option(Wrap::new(visitor, &self.path))
+            .deserialize_option(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -225,7 +230,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_unit(Wrap::new(visitor, &self.path))
+            .deserialize_unit(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_unit_struct<V>(
@@ -237,7 +242,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_unit_struct(name, Wrap::new(visitor, &self.path))
+            .deserialize_unit_struct(name, Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_newtype_struct<V>(
@@ -249,7 +254,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_newtype_struct(name, Wrap::new(visitor, &self.path))
+            .deserialize_newtype_struct(name, Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -257,7 +262,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_seq(Wrap::new(visitor, &self.path))
+            .deserialize_seq(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, D::Error>
@@ -265,7 +270,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_tuple(len, Wrap::new(visitor, &self.path))
+            .deserialize_tuple(len, Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_tuple_struct<V>(
@@ -278,7 +283,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_tuple_struct(name, len, Wrap::new(visitor, &self.path))
+            .deserialize_tuple_struct(name, len, Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -286,7 +291,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_map(Wrap::new(visitor, &self.path))
+            .deserialize_map(Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_struct<V>(
@@ -299,7 +304,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_struct(name, fields, Wrap::new(visitor, &self.path))
+            .deserialize_struct(name, fields, Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_enum<V>(
@@ -312,7 +317,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_enum(name, variants, Wrap::new(visitor, &self.path))
+            .deserialize_enum(name, variants, Wrap::new(visitor, &self.state))
     }
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, D::Error>
@@ -327,7 +332,7 @@ where
         V: Visitor<'de>,
     {
         self.de
-            .deserialize_identifier(Wrap::new(visitor, &self.path))
+            .deserialize_identifier(Wrap::new(visitor, &self.state))
     }
 }
 
@@ -335,14 +340,14 @@ where
 /// `VariantAccess`.
 struct Wrap<X> {
     delegate: X,
-    path: Rc<Path>,
+    state: State,
 }
 
 impl<X> Wrap<X> {
-    fn new(delegate: X, path: &Rc<Path>) -> Self {
+    fn new(delegate: X, state: &State) -> Self {
         Wrap {
             delegate: delegate,
-            path: path.clone(),
+            state: state.clone(),
         }
     }
 }
@@ -483,7 +488,7 @@ where
     {
         self.delegate.visit_some(Deserializer {
             de: deserializer,
-            path: Rc::new(Path::Some { parent: self.path.clone() }),
+            state: state_with_parent_path(&self.state, |parent| Rc::new(Path::Some { parent })),
         })
     }
 
@@ -493,7 +498,7 @@ where
     {
         self.delegate.visit_newtype_struct(Deserializer {
             de: deserializer,
-            path: Rc::new(Path::NewtypeStruct { parent: self.path.clone() }),
+            state: state_with_parent_path(&self.state, |parent| Rc::new(Path::NewtypeStruct { parent })),
         })
     }
 
@@ -502,7 +507,7 @@ where
         V: de::SeqAccess<'de>,
     {
         self.delegate
-            .visit_seq(SeqAccess::new(visitor, &self.path))
+            .visit_seq(SeqAccess::new(visitor, &self.state))
     }
 
     fn visit_map<V>(self, visitor: V) -> Result<Self::Value, V::Error>
@@ -510,7 +515,7 @@ where
         V: de::MapAccess<'de>,
     {
         self.delegate
-            .visit_map(MapAccess::new(visitor, &self.path))
+            .visit_map(MapAccess::new(visitor, &self.state))
     }
 
     fn visit_enum<V>(self, visitor: V) -> Result<Self::Value, V::Error>
@@ -518,7 +523,7 @@ where
         V: de::EnumAccess<'de>,
     {
         self.delegate
-            .visit_enum(Wrap::new(visitor, &self.path))
+            .visit_enum(Wrap::new(visitor, &self.state))
     }
 
     fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
@@ -555,7 +560,7 @@ where
     where
         V: DeserializeSeed<'de>,
     {
-        let path = &self.path;
+        let path = &self.state;
         self.delegate
             .variant_seed(seed)
             .map(move |(v, vis)| (v, Wrap::new(vis, path)))
@@ -577,9 +582,9 @@ where
     where
         T: DeserializeSeed<'de>,
     {
-        let path = Rc::new(Path::NewtypeVariant { parent: self.path.clone() });
+        let state = state_with_parent_path(&self.state, |parent| Rc::new(Path::NewtypeVariant { parent }));
         self.delegate
-            .newtype_variant_seed(TrackedSeed::new(seed, path))
+            .newtype_variant_seed(TrackedSeed::new(seed, state))
     }
 
     fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, X::Error>
@@ -587,7 +592,7 @@ where
         V: Visitor<'de>,
     {
         self.delegate
-            .tuple_variant(len, Wrap::new(visitor, &self.path))
+            .tuple_variant(len, Wrap::new(visitor, &self.state))
     }
 
     fn struct_variant<V>(
@@ -599,7 +604,7 @@ where
         V: Visitor<'de>,
     {
         self.delegate
-            .struct_variant(fields, Wrap::new(visitor, &self.path))
+            .struct_variant(fields, Wrap::new(visitor, &self.state))
     }
 }
 
@@ -642,8 +647,8 @@ where
 {
     type Error = X::Error;
 
-    fn get_state<T: 'static>(&self) -> Option<&T> {
-        self.delegate.get_state()
+    fn state(&self) -> &State {
+        self.delegate.state()
     }
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, X::Error>
@@ -1096,14 +1101,14 @@ where
 /// their path.
 struct TrackedSeed<X> {
     seed: X,
-    path: Rc<Path>,
+    state: State,
 }
 
 impl<X> TrackedSeed<X> {
-    fn new(seed: X, path: Rc<Path>) -> Self {
+    fn new(seed: X, state: State) -> Self {
         TrackedSeed {
             seed: seed,
-            path: path,
+            state: state,
         }
     }
 }
@@ -1120,7 +1125,7 @@ where
     {
         self.seed.deserialize(Deserializer {
             de: deserializer,
-            path: self.path,
+            state: self.state.clone(),
         })
     }
 }
@@ -1128,15 +1133,15 @@ where
 /// Seq visitor that tracks the index of its elements.
 struct SeqAccess<X> {
     delegate: X,
-    path: Rc<Path>,
+    state: State,
     index: usize,
 }
 
 impl<X> SeqAccess<X> {
-    fn new(delegate: X, path: &Rc<Path>) -> Self {
+    fn new(delegate: X, state: &State) -> Self {
         SeqAccess {
             delegate: delegate,
-            path: path.clone(),
+            state: state.clone(),
             index: 0,
         }
     }
@@ -1153,13 +1158,10 @@ where
     where
         T: DeserializeSeed<'de>,
     {
-        let path = Rc::new(Path::Seq {
-            parent: self.path.clone(),
-            index: self.index,
-        });
+        let state = state_with_parent_path(&self.state, |parent| Rc::new(Path::Seq { parent, index: self.index }));
         self.index += 1;
         self.delegate
-            .next_element_seed(TrackedSeed::new(seed, path))
+            .next_element_seed(TrackedSeed::new(seed, state))
     }
 
     fn size_hint(&self) -> Option<usize> {
@@ -1171,15 +1173,15 @@ where
 /// track the path to its values.
 struct MapAccess<X> {
     delegate: X,
-    path: Rc<Path>,
+    state: State,
     key: Option<String>,
 }
 
 impl<X> MapAccess<X> {
-    fn new(delegate: X, path: &Rc<Path>) -> Self {
+    fn new(delegate: X, state: &State) -> Self {
         MapAccess {
             delegate: delegate,
-            path: path.clone(),
+            state: state.clone(),
             key: None,
         }
     }
@@ -1210,12 +1212,10 @@ where
     where
         V: DeserializeSeed<'de>,
     {
-        let path = Rc::new(Path::Map {
-            parent: self.path.clone(),
-            key: self.key()?,
-        });
+        let key = self.key()?;
+        let state = state_with_parent_path(&self.state, |parent| Rc::new(Path::Map { parent, key }));
         self.delegate
-            .next_value_seed(TrackedSeed::new(seed, path))
+            .next_value_seed(TrackedSeed::new(seed, state))
     }
 
     fn size_hint(&self) -> Option<usize> {
