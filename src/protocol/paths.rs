@@ -14,9 +14,7 @@ where
 
 fn state_with_parent_path<F: FnOnce(Rc<Path>) -> Rc<Path>>(state: &State, f: F) -> State {
     let mut rv = state.clone();
-    let parent = state.with(|parent: Option<&Rc<Path>>| {
-        parent.map(|x| x.clone())
-    }).unwrap_or_else(|| Rc::new(Path::Root));
+    let parent = state.get::<Rc<Path>>().map(|x| x.clone()).unwrap_or_else(|| Rc::new(Path::Root));
     rv.set(f(parent));
     rv
 }
