@@ -1,5 +1,7 @@
 //! This module exposes the types for the Sentry protocol in different versions.
 
+mod annotated;
+mod paths;
 #[cfg(feature = "with_protocol")]
 pub mod v7;
 
