@@ -31,7 +31,7 @@ pub mod value {
 /// It is currently backed by the `linked-hash-map` crate's hash map so that
 /// insertion order is preserved.
 pub mod map {
-    pub use std::collections::hash_map::{HashMap as Map, *};
+    pub use std::collections::btree_map::{BTreeMap as Map, *};
 }
 
 /// Represents a debug ID.
