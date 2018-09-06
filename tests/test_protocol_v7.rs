@@ -368,9 +368,6 @@ mod test_user {
         let event = v7::Event {
             user: Some(v7::User {
                 id: Some("8fd5a33b-5b0e-45b2-aff2-9e4f067756ba".into()),
-                email: None,
-                ip_address: None,
-                username: None,
                 ..Default::default()
             }),
             ..Default::default()
@@ -635,7 +632,6 @@ mod test_request {
                     env.insert("PATH_INFO".into(), "/bar".into());
                     env
                 },
-                ..Default::default()
             }),
             ..Default::default()
         };
@@ -983,7 +979,6 @@ mod test_exception {
                         m.insert("x12".into(), v7::RegVal(0x1_b3b3_7b1d));
                         m
                     },
-                    ..Default::default()
                 }),
                 raw_stacktrace: Some(v7::Stacktrace {
                     frames: vec![v7::Frame {
