@@ -407,7 +407,7 @@ impl Addr {
     }
 }
 
-impl_serde_hex!(Addr, u64);
+impl_hex_serde!(Addr, u64);
 
 impl From<u64> for Addr {
     fn from(addr: u64) -> Addr {
@@ -459,7 +459,7 @@ fn is_false(value: &bool) -> bool {
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct RegVal(pub u64);
 
-impl_serde_hex!(RegVal, u64);
+impl_hex_serde!(RegVal, u64);
 
 impl From<u64> for RegVal {
     fn from(addr: u64) -> RegVal {
@@ -773,7 +773,7 @@ impl Level {
     }
 }
 
-impl_str_serialization!(Level);
+impl_str_serde!(Level);
 
 /// Represents a single breadcrumb.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
