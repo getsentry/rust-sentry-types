@@ -21,20 +21,17 @@ use uuid::Uuid;
 
 use utils::{ts_seconds_float, ts_seconds_float_opt};
 
-/// An arbitrary (JSON) value (`serde_json::value::Value`)
+/// An arbitrary (JSON) value.
 pub mod value {
     pub use serde_json::value::{from_value, to_value, Index, Map, Number, Value};
 }
 
-/// The internally use arbitrary data map type (`linked_hash_map::LinkedHashMap`)
+/// The internally used arbitrary data map type.
 ///
 /// It is currently backed by the `linked-hash-map` crate's hash map so that
 /// insertion order is preserved.
 pub mod map {
-    pub use linked_hash_map::{
-        Entries, Entry, IntoIter, Iter, IterMut, Keys, LinkedHashMap, OccupiedEntry, VacantEntry,
-        Values,
-    };
+    pub use std::collections::hash_map::{HashMap as Map, *};
 }
 
 /// Represents a debug ID.
@@ -42,11 +39,11 @@ pub mod debugid {
     pub use debugid::{BreakpadFormat, DebugId, ParseDebugIdError};
 }
 
-/// An arbitrary (JSON) value (`serde_json::value::Value`)
+/// An arbitrary (JSON) value.
 pub use self::value::Value;
 
-/// The internally use arbitrary data map type (`linked_hash_map::LinkedHashMap`)
-pub use self::map::LinkedHashMap as Map;
+/// The internally useed map type.
+pub use self::map::Map;
 
 /// A wrapper type for collections with attached meta data.
 ///
