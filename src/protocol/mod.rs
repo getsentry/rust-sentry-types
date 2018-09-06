@@ -2,6 +2,8 @@
 
 #[cfg(feature = "with_protocol")]
 pub mod v7;
+pub mod canonical;
+pub mod unexpected;
 
 /// The latest version of the protocol.
 pub const LATEST: u16 = 7;
