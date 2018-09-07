@@ -26,33 +26,20 @@ mod test_event {
     use chrono::TimeZone;
 
     #[test]
-    fn test_event_defaults() {
-        let event: v7::Event = Default::default();
+    fn test_event_default_vs_new() {
+        let event = reserialize(&v7::Event::new());
 
-        assert_eq!(event.id, None);
-        assert_eq!(event.timestamp, None);
+        assert!(event.event_id != uuid::Uuid::nil());
         assert_eq!(event.fingerprint, vec!["{{ default }}".to_string()]);
         assert_eq!(event.platform, "other");
         assert_eq!(event.level, v7::Level::Error);
-        assert_eq!(event.sdk_info, None);
-    }
-
-    #[test]
-    fn test_event_default_vs_new() {
-        let event_new = reserialize(&v7::Event::new());
-        let event_default = reserialize(&Default::default());
-
-        assert_eq!(event_default.id, None);
-        assert_eq!(event_default.timestamp, None);
-
-        assert!(event_new.id.unwrap() != uuid::Uuid::nil());
-        assert!(event_new.timestamp.is_some());
+        assert_eq!(event.sdk, None);
     }
 
     #[test]
     fn test_event_to_string() {
         let event = v7::Event {
-            id: "d43e86c9-6e42-4a93-a4fb-da156dd17341".parse().ok(),
+            event_id: "d43e86c9-6e42-4a93-a4fb-da156dd17341".parse().unwrap(),
             ..Default::default()
         };
         assert_eq!(
@@ -64,8 +51,8 @@ mod test_event {
     #[test]
     fn test_event_to_string_timestamp() {
         let event = v7::Event {
-            id: "d43e86c9-6e42-4a93-a4fb-da156dd17341".parse().ok(),
-            timestamp: Some(Utc.ymd(2017, 12, 24).and_hms(8, 12, 0)),
+            event_id: "d43e86c9-6e42-4a93-a4fb-da156dd17341".parse().unwrap(),
+            timestamp: Utc.ymd(2017, 12, 24).and_hms(8, 12, 0),
             ..Default::default()
         };
         assert_eq!(
@@ -330,7 +317,7 @@ mod test_timestamp {
     #[test]
     fn test_timestamp_utc() {
         let event = v7::Event {
-            timestamp: Some(Utc.ymd(2017, 12, 24).and_hms(8, 12, 0)),
+            timestamp: Utc.ymd(2017, 12, 24).and_hms(8, 12, 0),
             ..Default::default()
         };
 
@@ -342,13 +329,13 @@ mod test_timestamp {
 
         let event: v7::Event =
             serde_json::from_slice(b"{\"timestamp\":\"2014-05-06T07:08:09Z\"}").unwrap();
-        assert_eq!(event.timestamp, Some(Utc.ymd(2014, 5, 6).and_hms(7, 8, 9)));
+        assert_eq!(event.timestamp, Utc.ymd(2014, 5, 6).and_hms(7, 8, 9));
     }
 
     #[test]
     fn test_timestamp_float() {
         let event = v7::Event {
-            timestamp: Some(Utc.ymd(2017, 12, 24).and_hms_milli(8, 12, 0, 500)),
+            timestamp: Utc.ymd(2017, 12, 24).and_hms_milli(8, 12, 0, 500),
             ..Default::default()
         };
 
@@ -473,11 +460,8 @@ mod test_stacktrace {
             stacktrace: Some(v7::Stacktrace {
                 frames: vec![v7::Frame {
                     function: Some("main".into()),
-                    location: v7::FileLocation {
-                        filename: Some("hello.py".into()),
-                        line: Some(1),
-                        ..Default::default()
-                    },
+                    filename: Some("hello.py".into()),
+                    lineno: Some(1),
                     ..Default::default()
                 }],
                 ..Default::default()
@@ -500,17 +484,13 @@ mod test_template_info {
     #[test]
     fn test_template_info() {
         let event = v7::Event {
-            template_info: Some(v7::TemplateInfo {
-                location: v7::FileLocation {
-                    filename: Some("hello.html".into()),
-                    line: Some(1),
-                    ..Default::default()
-                },
-                source: v7::EmbeddedSources {
-                    pre_lines: vec!["foo1".into(), "bar2".into()],
-                    current_line: Some("hey hey hey3".into()),
-                    post_lines: vec!["foo4".into(), "bar5".into()],
-                },
+            template: Some(v7::TemplateInfo {
+                filename: Some("hello.html".into()),
+                lineno: Some(1),
+                pre_context: vec!["foo1".into(), "bar2".into()],
+                context_line: Some("hey hey hey3".into()),
+                post_context: vec!["foo4".into(), "bar5".into()],
+                ..Default::default()
             }),
             ..Default::default()
         };
@@ -574,11 +554,8 @@ mod test_threads {
                 stacktrace: Some(v7::Stacktrace {
                     frames: vec![v7::Frame {
                         function: Some("main".into()),
-                        location: v7::FileLocation {
-                            filename: Some("hello.py".into()),
-                            line: Some(1),
-                            ..Default::default()
-                        },
+                        filename: Some("hello.py".into()),
+                        lineno: Some(1),
                         ..Default::default()
                     }],
                     ..Default::default()
@@ -586,11 +563,8 @@ mod test_threads {
                 raw_stacktrace: Some(v7::Stacktrace {
                     frames: vec![v7::Frame {
                         function: Some("main".into()),
-                        location: v7::FileLocation {
-                            filename: Some("hello.py".into()),
-                            line: Some(1),
-                            ..Default::default()
-                        },
+                        filename: Some("hello.py".into()),
+                        lineno: Some(1),
                         ..Default::default()
                     }],
                     ..Default::default()
@@ -804,7 +778,7 @@ mod test_exception {
     #[test]
     fn test_exception_values() {
         let mut event: v7::Event = Default::default();
-        event.exceptions.values.push(v7::Exception {
+        event.exception.values.push(v7::Exception {
             ty: "ZeroDivisionError".into(),
             ..Default::default()
         });
@@ -822,18 +796,15 @@ mod test_exception {
     #[test]
     fn test_exception_stacktrace_minimal() {
         let event: v7::Event = v7::Event {
-            exceptions: vec![v7::Exception {
+            exception: vec![v7::Exception {
                 ty: "DivisionByZero".into(),
                 value: Some("integer division or modulo by zero".into()),
                 module: None,
                 stacktrace: Some(v7::Stacktrace {
                     frames: vec![v7::Frame {
                         function: Some("main".into()),
-                        location: v7::FileLocation {
-                            filename: Some("hello.py".into()),
-                            line: Some(1),
-                            ..Default::default()
-                        },
+                        filename: Some("hello.py".into()),
+                        lineno: Some(1),
                         ..Default::default()
                     }],
                     ..Default::default()
@@ -857,24 +828,19 @@ mod test_exception {
     #[test]
     fn test_exception_stacktrace_larger() {
         let event: v7::Event = v7::Event {
-            exceptions: vec![v7::Exception {
+            exception: vec![v7::Exception {
                 ty: "DivisionByZero".into(),
                 value: Some("integer division or modulo by zero".into()),
                 module: None,
                 stacktrace: Some(v7::Stacktrace {
                     frames: vec![v7::Frame {
                         function: Some("main".into()),
-                        location: v7::FileLocation {
-                            filename: Some("hello.py".into()),
-                            line: Some(7),
-                            column: Some(42),
-                            ..Default::default()
-                        },
-                        source: v7::EmbeddedSources {
-                            pre_lines: vec!["foo".into(), "bar".into()],
-                            current_line: Some("hey hey hey".into()),
-                            post_lines: vec!["foo".into(), "bar".into()],
-                        },
+                        filename: Some("hello.py".into()),
+                        lineno: Some(7),
+                        colno: Some(42),
+                        pre_context: vec!["foo".into(), "bar".into()],
+                        context_line: Some("hey hey hey".into()),
+                        post_context: vec!["foo".into(), "bar".into()],
                         in_app: Some(true),
                         vars: {
                             let mut m = v7::Map::new();
@@ -906,7 +872,7 @@ mod test_exception {
     #[test]
     fn test_exception_stacktrace_full() {
         let event: v7::Event = v7::Event {
-            exceptions: vec![v7::Exception {
+            exception: vec![v7::Exception {
                 ty: "DivisionByZero".into(),
                 value: Some("integer division or modulo by zero".into()),
                 module: Some("x".into()),
@@ -914,17 +880,13 @@ mod test_exception {
                     frames: vec![v7::Frame {
                         function: Some("main".into()),
                         symbol: Some("main".into()),
-                        location: v7::FileLocation {
-                            filename: Some("hello.py".into()),
-                            abs_path: Some("/app/hello.py".into()),
-                            line: Some(7),
-                            column: Some(42),
-                        },
-                        source: v7::EmbeddedSources {
-                            pre_lines: vec!["foo".into(), "bar".into()],
-                            current_line: Some("hey hey hey".into()),
-                            post_lines: vec!["foo".into(), "bar".into()],
-                        },
+                        filename: Some("hello.py".into()),
+                        abs_path: Some("/app/hello.py".into()),
+                        lineno: Some(7),
+                        colno: Some(42),
+                        pre_context: vec!["foo".into(), "bar".into()],
+                        context_line: Some("hey hey hey".into()),
+                        post_context: vec!["foo".into(), "bar".into()],
                         in_app: Some(true),
                         vars: {
                             let mut m = v7::Map::new();
@@ -933,11 +895,9 @@ mod test_exception {
                         },
                         package: Some("hello.whl".into()),
                         module: Some("hello".into()),
-                        instruction_info: v7::InstructionInfo {
-                            image_addr: Some(v7::Addr(0)),
-                            instruction_addr: Some(v7::Addr(0)),
-                            symbol_addr: Some(v7::Addr(0)),
-                        },
+                        image_addr: Some(v7::Addr(0)),
+                        instruction_addr: Some(v7::Addr(0)),
+                        symbol_addr: Some(v7::Addr(0)),
                     }],
                     frames_omitted: Some((1, 2)),
                     registers: {
@@ -983,11 +943,9 @@ mod test_exception {
                 raw_stacktrace: Some(v7::Stacktrace {
                     frames: vec![v7::Frame {
                         function: Some("main".into()),
-                        instruction_info: v7::InstructionInfo {
-                            image_addr: Some(v7::Addr(0)),
-                            instruction_addr: Some(v7::Addr(0)),
-                            symbol_addr: Some(v7::Addr(0)),
-                        },
+                        image_addr: Some(v7::Addr(0)),
+                        instruction_addr: Some(v7::Addr(0)),
+                        symbol_addr: Some(v7::Addr(0)),
                         ..Default::default()
                     }],
                     frames_omitted: Some((1, 2)),
@@ -1027,7 +985,7 @@ mod test_exception {
     #[test]
     fn test_exception_mechanism() {
         let event: v7::Event = v7::Event {
-            exceptions: vec![v7::Exception {
+            exception: vec![v7::Exception {
                 ty: "EXC_BAD_ACCESS".into(),
                 value: Some("Attempted to dereference garbage pointer 0x1".into()),
                 mechanism: Some(v7::Mechanism {
@@ -1056,7 +1014,7 @@ mod test_exception {
                             code_name: None,
                         }),
                         mach_exception: Some(v7::MachException {
-                            ty: 1,
+                            exception: 1,
                             code: 1,
                             subcode: 8,
                             name: None,
@@ -1083,7 +1041,7 @@ mod test_exception {
 #[test]
 fn test_sdk_info() {
     let event = v7::Event {
-        sdk_info: Some(Cow::Owned(v7::ClientSdkInfo {
+        sdk: Some(Cow::Owned(v7::ClientSdkInfo {
             name: "sentry-rust".into(),
             version: "1.0".into(),
             integrations: vec!["rocket".into()],
@@ -1101,20 +1059,6 @@ fn test_sdk_info() {
         "{\"sdk\":{\"name\":\"sentry-rust\",\"version\":\"1.0\",\
          \"integrations\":[\"rocket\"],\
          \"packages\":[{\"package_name\":\"crates:sentry\",\"version\":\"1.0\"}]}}"
-    );
-}
-
-#[test]
-fn test_other_data() {
-    let event = v7::Event {
-        id: Some("864ee979-77bf-43ac-96d7-4f7486d138ab".parse().unwrap()),
-        ..Default::default()
-    };
-
-    assert_roundtrip(&event);
-    assert_eq!(
-        serde_json::to_string(&event).unwrap(),
-        "{\"event_id\":\"864ee97977bf43ac96d74f7486d138ab\"}"
     );
 }
 
