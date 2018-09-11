@@ -1042,6 +1042,9 @@ pub enum Context {
     App(Box<AppContext>),
     /// Web browser data.
     Browser(Box<BrowserContext>),
+    /// Generic other context data.
+    #[serde(rename = "unknown")]
+    Other(Map<String, Value>),
 }
 
 impl Context {
@@ -1053,6 +1056,7 @@ impl Context {
             Context::Runtime(..) => "runtime",
             Context::App(..) => "app",
             Context::Browser(..) => "browser",
+            Context::Other(..) => "unknown",
         }
     }
 }

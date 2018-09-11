@@ -1374,6 +1374,34 @@ mod test_contexts {
              3\"},\"othervm\":{\"type\":\"runtime\",\"name\":\"magicvm\",\"version\":\"5.3\"}}}"
         );
     }
+
+    #[test]
+    fn test_other_context() {
+        let event = v7::Event {
+            event_id: event_id(),
+            timestamp: event_time(),
+            contexts: {
+                let mut m = v7::Map::new();
+                m.insert(
+                    "other".into(),
+                    v7::Context::Other({
+                        let mut m = v7::Map::new();
+                        m.insert("aha".into(), "oho".into());
+                        m
+                    }),
+                );
+                m
+            },
+            ..Default::default()
+        };
+
+        assert_roundtrip(&event);
+        assert_eq!(
+            serde_json::to_string(&event).unwrap(),
+            "{\"event_id\":\"d43e86c96e424a93a4fbda156dd17341\",\"timestamp\":1514103120,\
+             \"contexts\":{\"other\":{\"type\":\"unknown\",\"aha\":\"oho\"}}}"
+        );
+    }
 }
 
 #[test]
