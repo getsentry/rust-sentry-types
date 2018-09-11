@@ -1190,6 +1190,7 @@ mod test_contexts {
                         external_free_storage: Some(2_097_152),
                         boot_time: Some("2018-02-08T12:52:12Z".parse().unwrap()),
                         timezone: Some("Europe/Vienna".into()),
+                        other: Default::default(),
                     }.into(),
                 );
                 m
@@ -1226,6 +1227,7 @@ mod test_contexts {
                         build: Some("ADSA23".into()),
                         kernel_version: Some("17.4.0".into()),
                         rooted: Some(true),
+                        other: Default::default(),
                     }.into(),
                 );
                 m
@@ -1259,6 +1261,7 @@ mod test_contexts {
                         app_name: Some("Baz App".into()),
                         app_version: Some("1.0".into()),
                         app_build: Some("100001".into()),
+                        other: Default::default(),
                     }.into(),
                 );
                 m
@@ -1289,6 +1292,7 @@ mod test_contexts {
                     v7::BrowserContext {
                         name: Some("Chrome".into()),
                         version: Some("59.0.3071".into()),
+                        other: Default::default(),
                     }.into(),
                 );
                 m
@@ -1317,6 +1321,7 @@ mod test_contexts {
                     v7::RuntimeContext {
                         name: Some("magicvm".into()),
                         version: Some("5.3".into()),
+                        other: Default::default(),
                     }.into(),
                 );
                 m
@@ -1345,6 +1350,7 @@ mod test_contexts {
                     v7::RuntimeContext {
                         name: Some("magicvm".into()),
                         version: Some("5.3".into()),
+                        other: Default::default(),
                     }.into(),
                 );
                 m.insert(
@@ -1352,6 +1358,7 @@ mod test_contexts {
                     v7::RuntimeContext {
                         name: Some("magicvm".into()),
                         version: Some("5.3".into()),
+                        other: Default::default(),
                     }.into(),
                 );
                 m

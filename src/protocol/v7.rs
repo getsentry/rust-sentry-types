@@ -1121,6 +1121,9 @@ pub struct DeviceContext {
     /// The timezone of the device.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timezone: Option<String>,
+    /// Additional arbitrary fields for forwards compatibility.
+    #[serde(flatten)]
+    pub other: Map<String, Value>,
 }
 
 /// Holds operating system information.
@@ -1141,6 +1144,9 @@ pub struct OsContext {
     /// An indicator if the os is rooted (mobile mostly).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rooted: Option<bool>,
+    /// Additional arbitrary fields for forwards compatibility.
+    #[serde(flatten)]
+    pub other: Map<String, Value>,
 }
 
 /// Holds information about the runtime.
@@ -1152,6 +1158,9 @@ pub struct RuntimeContext {
     /// The version of the runtime.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    /// Additional arbitrary fields for forwards compatibility.
+    #[serde(flatten)]
+    pub other: Map<String, Value>,
 }
 
 /// Holds app information.
@@ -1178,6 +1187,9 @@ pub struct AppContext {
     /// Internal build ID as it appears on the platform.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub app_build: Option<String>,
+    /// Additional arbitrary fields for forwards compatibility.
+    #[serde(flatten)]
+    pub other: Map<String, Value>,
 }
 
 /// Holds information about the web browser.
@@ -1189,6 +1201,9 @@ pub struct BrowserContext {
     /// The version of the browser.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    /// Additional arbitrary fields for forwards compatibility.
+    #[serde(flatten)]
+    pub other: Map<String, Value>,
 }
 
 macro_rules! into_context {
