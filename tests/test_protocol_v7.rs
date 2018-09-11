@@ -416,6 +416,11 @@ mod test_user {
                 email: Some("foo@example.invalid".into()),
                 ip_address: Some("127.0.0.1".parse().unwrap()),
                 username: Some("john-doe".into()),
+                other: {
+                    let mut hm = v7::Map::new();
+                    hm.insert("foo".into(), "bar".into());
+                    hm
+                },
             }),
             ..Default::default()
         };
@@ -425,7 +430,7 @@ mod test_user {
             serde_json::to_string(&event).unwrap(),
             "{\"event_id\":\"d43e86c96e424a93a4fbda156dd17341\",\"timestamp\":1514103120,\"user\":\
              {\"id\":\"8fd5a33b-5b0e-45b2-aff2-9e4f067756ba\",\"email\":\"foo@example.invalid\",\
-             \"ip_address\":\"127.0.0.1\",\"username\":\"john-doe\"}}"
+             \"ip_address\":\"127.0.0.1\",\"username\":\"john-doe\",\"foo\":\"bar\"}}"
         );
     }
 

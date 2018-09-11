@@ -834,6 +834,9 @@ pub struct User {
     /// A human readable username of the user.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
+    /// Additional arbitrary fields for forwards compatibility.
+    #[serde(flatten)]
+    pub other: Map<String, Value>,
 }
 
 /// Represents http request data.
