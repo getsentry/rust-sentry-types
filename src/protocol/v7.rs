@@ -82,6 +82,18 @@ impl<T> From<Vec<T>> for Values<T> {
     }
 }
 
+impl<T> AsRef<[T]> for Values<T> {
+    fn as_ref(&self) -> &[T] {
+        &self.values
+    }
+}
+
+impl<T> AsMut<Vec<T>> for Values<T> {
+    fn as_mut(&mut self) -> &mut Vec<T> {
+        &mut self.values
+    }
+}
+
 impl<T> ops::Deref for Values<T> {
     type Target = [T];
 
