@@ -153,7 +153,7 @@ impl FromStr for Dsn {
             return Err(DsnParseError::NoProjectId);
         }
 
-        let mut path_segments = url.path().trim_matches('/').rsplitn(2, "/");
+        let mut path_segments = url.path().trim_matches('/').rsplitn(2, '/');
 
         let project_id = path_segments
             .next()
