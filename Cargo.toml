@@ -13,6 +13,7 @@ exclude = [
     ".vscode/**/*",
     "scripts/**/*"
 ]
+edition = "2018"
 
 [features]
 default = ["with_protocol", "with_serde"]

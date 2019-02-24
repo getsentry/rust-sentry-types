@@ -13,7 +13,7 @@ use std::ops;
 use std::str;
 
 use chrono::{DateTime, Utc};
-use debugid::DebugId;
+use ::debugid::DebugId;
 use serde::Serializer;
 use url::Url;
 use url_serde;
