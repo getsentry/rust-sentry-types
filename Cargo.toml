@@ -28,8 +28,8 @@ travis-ci = { repository = "getsentry/rust-sentry-types" }
 failure = "0.1.5"
 url = "1.7.2"
 serde = { version = "1.0.88", features = ["derive"] }
-serde_json = { version = "1.0.38" }
-url_serde = { version = "0.2.0" }
+serde_json = "1.0.38"
+url_serde = "0.2.0"
 chrono = { version = "0.4.6", features = ["serde"] }
 uuid = { version = "0.7.2", features = ["v4", "serde"] }
 debugid = { version = "0.4.0", features = ["with_serde"] }
