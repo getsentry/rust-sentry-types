@@ -5,11 +5,13 @@ use std::fmt;
 use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
+use failure::Fail;
+use serde::{Deserialize, Serialize};
 use url::form_urlencoded;
 
-use dsn::Dsn;
-use protocol;
-use utils::{datetime_to_timestamp, timestamp_to_datetime};
+use crate::dsn::Dsn;
+use crate::protocol;
+use crate::utils::{datetime_to_timestamp, timestamp_to_datetime};
 
 /// Represents an auth header parsing error.
 #[derive(Debug, Fail, Copy, Clone, Eq, PartialEq)]
@@ -173,7 +175,7 @@ impl FromStr for Auth {
             match (kviter.next(), kviter.next()) {
                 (Some("sentry_timestamp"), Some(ts)) => {
                     let f = ts.parse().map_err(|_| AuthParseError::InvalidTimestamp)?;
-                    rv.timestamp = Some(timestamp_to_datetime(f));
+                    rv.timestamp = timestamp_to_datetime(f).single();
                 }
                 (Some("sentry_client"), Some(client)) => {
                     rv.client = Some(client.into());

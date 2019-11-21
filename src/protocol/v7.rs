@@ -4,6 +4,8 @@
 //! cleanup by renaming attributes has been applied.  The idea here is that
 //! a future sentry protocol will be a cleanup of the old one and is mapped
 //! to similar values on the rust side.
+#![allow(clippy::trivially_copy_pass_by_ref)]
+
 use std::borrow::Cow;
 use std::cmp;
 use std::fmt;
@@ -12,14 +14,16 @@ use std::net::{AddrParseError, IpAddr};
 use std::ops;
 use std::str;
 
+use ::debugid::DebugId;
 use chrono::{DateTime, Utc};
-use debugid::DebugId;
+use failure::Fail;
 use serde::Serializer;
+use serde::{Deserialize, Serialize};
 use url::Url;
 use url_serde;
 use uuid::Uuid;
 
-use utils::ts_seconds_float;
+use crate::utils::ts_seconds_float;
 
 /// An arbitrary (JSON) value.
 pub mod value {
@@ -128,7 +132,7 @@ impl<'a, T> IntoIterator for &'a mut Values<T> {
     type IntoIter = <&'a mut Vec<T> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&mut self.values).into_iter()
+        self.values.iter_mut()
     }
 }
 
@@ -137,7 +141,7 @@ impl<'a, T> IntoIterator for &'a Values<T> {
     type IntoIter = <&'a Vec<T> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&self.values).into_iter()
+        self.values.iter()
     }
 }
 
@@ -593,6 +597,9 @@ pub struct Mechanism {
     /// An optional flag indicating whether this exception was handled.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub handled: Option<bool>,
+    /// An optional flag indicating a synthetic exception.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub synthetic: Option<bool>,
     /// Additional attributes depending on the mechanism type.
     #[serde(default, skip_serializing_if = "Map::is_empty")]
     pub data: Map<String, Value>,
@@ -1256,7 +1263,7 @@ mod event {
         Cow::Borrowed(DEFAULT_FINGERPRINT)
     }
 
-    #[cfg_attr(feature = "cargo-clippy", allow(ptr_arg))]
+    #[allow(clippy::ptr_arg)]
     pub fn is_default_fingerprint<'a>(fp: &[Cow<'a, str>]) -> bool {
         fp.len() == 1 && ((&fp)[0] == "{{ default }}" || (&fp)[0] == "{{default}}")
     }

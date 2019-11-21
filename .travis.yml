@@ -9,15 +9,14 @@ git:
 branches:
   only:
     - master
+    - /^release\/.+$/
 
 script: make $SUITE
 
 matrix:
   include:
     - env: SUITE=test
-    - env: SUITE=test
-      rust: "1.28.0"
-    - env: SUITE=format-check
+    - env: SUITE=style
     - env: SUITE=lint
 
 notifications:

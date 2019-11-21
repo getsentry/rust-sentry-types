@@ -1,10 +1,11 @@
 use std::fmt;
 use std::str::FromStr;
 
+use failure::Fail;
 use url::Url;
 
-use auth::{auth_from_dsn_and_client, Auth};
-use project_id::{ProjectId, ProjectIdParseError};
+use crate::auth::{auth_from_dsn_and_client, Auth};
+use crate::project_id::{ProjectId, ProjectIdParseError};
 
 /// Represents a dsn url parsing error.
 #[derive(Debug, Fail)]
@@ -39,8 +40,8 @@ pub enum Scheme {
 
 impl Scheme {
     /// Returns the default port for this scheme.
-    pub fn default_port(&self) -> u16 {
-        match *self {
+    pub fn default_port(self) -> u16 {
+        match self {
             Scheme::Http => 80,
             Scheme::Https => 443,
         }
