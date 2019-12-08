@@ -22,9 +22,6 @@ pub enum AuthParseError {
     /// Raised if the timestamp value is invalid.
     #[fail(display = "invalid value for timestamp")]
     InvalidTimestamp,
-    /// Raised if the version value is invalid
-    #[fail(display = "invalid value for version")]
-    InvalidVersion,
     /// Raised if the public key is missing entirely
     #[fail(display = "missing public key in auth header")]
     MissingPublicKey,
@@ -38,7 +35,7 @@ pub struct Auth {
     #[serde(rename = "sentry_client")]
     client: Option<String>,
     #[serde(rename = "sentry_version")]
-    version: u16,
+    version: Option<u16>,
     #[serde(rename = "sentry_key")]
     key: String,
     #[serde(rename = "sentry_secret")]
@@ -53,7 +50,7 @@ impl Auth {
         let mut rv = Auth {
             timestamp: None,
             client: None,
-            version: protocol::LATEST,
+            version: Some(protocol::LATEST),
             key: "".into(),
             secret: None,
         };
@@ -75,7 +72,7 @@ impl Auth {
                     rv.client = Some(value.into());
                 }
                 "version" => {
-                    rv.version = value.parse().map_err(|_| AuthParseError::InvalidVersion)?;
+                    rv.version = value.parse().ok();
                 }
                 "key" => {
                     rv.key = value.into();
@@ -105,7 +102,7 @@ impl Auth {
     }
 
     /// Returns the protocol version the client speaks
-    pub fn version(&self) -> u16 {
+    pub fn version(&self) -> Option<u16> {
         self.version
     }
 
@@ -132,11 +129,10 @@ impl Auth {
 
 impl fmt::Display for Auth {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Sentry sentry_key={}, sentry_version={}",
-            self.key, self.version
-        )?;
+        write!(f, "Sentry sentry_key={}", self.key)?;
+        if let Some(version) = self.version {
+            write!(f, ", sentry_version={}", version)?;
+        }
         if let Some(ts) = self.timestamp {
             write!(f, ", sentry_timestamp={}", datetime_to_timestamp(&ts))?;
         }
@@ -157,7 +153,7 @@ impl FromStr for Auth {
         let mut rv = Auth {
             timestamp: None,
             client: None,
-            version: protocol::LATEST,
+            version: Some(protocol::LATEST),
             key: "".into(),
             secret: None,
         };
@@ -181,9 +177,7 @@ impl FromStr for Auth {
                     rv.client = Some(client.into());
                 }
                 (Some("sentry_version"), Some(version)) => {
-                    rv.version = version
-                        .parse()
-                        .map_err(|_| AuthParseError::InvalidVersion)?;
+                    rv.version = version.parse().ok();
                 }
                 (Some("sentry_key"), Some(key)) => {
                     rv.key = key.into();
@@ -207,7 +201,7 @@ pub(crate) fn auth_from_dsn_and_client(dsn: &Dsn, client: Option<&str>) -> Auth 
     Auth {
         timestamp: Some(Utc::now()),
         client: client.map(|x| x.to_string()),
-        version: protocol::LATEST,
+        version: Some(protocol::LATEST),
         key: dsn.public_key().to_string(),
         secret: dsn.secret_key().map(|x| x.to_string()),
     }

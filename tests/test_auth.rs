@@ -19,7 +19,7 @@ fn test_auth_parsing() {
         Some(Utc.ymd(2012, 2, 1).and_hms_milli(0, 14, 46, 500))
     );
     assert_eq!(auth.client_agent(), Some("raven-python/42"));
-    assert_eq!(auth.version(), 6);
+    assert_eq!(auth.version(), Some(6));
     assert_eq!(auth.public_key(), "public");
     assert_eq!(auth.secret_key(), Some("secret"));
 
@@ -34,6 +34,13 @@ fn test_auth_parsing() {
 }
 
 #[test]
+fn test_auth_parsing_invalid_sentry_version() {
+    let auth: Auth = "Sentry sentry_key=public, sentry_version=2.0".parse().unwrap();
+    assert_eq!(auth.version(), None);
+    assert_eq!(auth.to_string(), "Sentry sentry_key=public");
+}
+
+#[test]
 fn test_auth_from_iterator() {
     let mut cont = HashMap::new();
     cont.insert("sentry_version", "7");
@@ -43,7 +50,7 @@ fn test_auth_from_iterator() {
     let auth = Auth::from_pairs(cont.into_iter().map(|(k, v)| (k.into(), v.into()))).unwrap();
     assert_eq!(auth.timestamp(), None);
     assert_eq!(auth.client_agent(), Some("raven-js/3.23.3"));
-    assert_eq!(auth.version(), 7);
+    assert_eq!(auth.version(), Some(7));
     assert_eq!(auth.public_key(), "4bb5d94de752a36b8b87851a3f82726a");
     assert_eq!(auth.secret_key(), None);
 
@@ -55,7 +62,7 @@ fn test_auth_from_iterator() {
     let auth = Auth::from_pairs(cont.into_iter().map(|(k, v)| (k.into(), v.into()))).unwrap();
     assert_eq!(auth.timestamp(), None);
     assert_eq!(auth.client_agent(), Some("raven-js/3.23.3"));
-    assert_eq!(auth.version(), 7);
+    assert_eq!(auth.version(), Some(7));
     assert_eq!(auth.public_key(), "4bb5d94de752a36b8b87851a3f82726a");
     assert_eq!(auth.secret_key(), None);
 }
@@ -66,7 +73,7 @@ fn test_auth_from_querystring() {
 
     assert_eq!(auth.timestamp(), None);
     assert_eq!(auth.client_agent(), Some("raven-js/3.23.3"));
-    assert_eq!(auth.version(), 7);
+    assert_eq!(auth.version(), Some(7));
     assert_eq!(auth.public_key(), "4bb5d94de752a36b8b87851a3f82726a");
     assert_eq!(auth.secret_key(), None);
 
@@ -77,7 +84,7 @@ fn test_auth_from_querystring() {
 
     assert_eq!(auth.timestamp(), None);
     assert_eq!(auth.client_agent(), Some("raven-js/3.23.3"));
-    assert_eq!(auth.version(), 7);
+    assert_eq!(auth.version(), Some(7));
     assert_eq!(auth.public_key(), "4bb5d94de752a36b8b87851a3f82726a");
     assert_eq!(auth.secret_key(), None);
 }
@@ -88,7 +95,7 @@ fn test_auth_to_dsn() {
     let dsn = url.parse::<Dsn>().unwrap();
     let auth = dsn.to_auth(Some("sentry-rust/1.0"));
     assert_eq!(auth.client_agent(), Some("sentry-rust/1.0"));
-    assert_eq!(auth.version(), protocol::LATEST);
+    assert_eq!(auth.version(), Some(protocol::LATEST));
     assert_eq!(auth.public_key(), "username");
     assert_eq!(auth.secret_key(), Some("password"));
 }
@@ -114,7 +121,7 @@ fn test_auth_from_json() {
 
     assert_eq!(auth.timestamp(), None);
     assert_eq!(auth.client_agent(), Some("raven-js/3.23.3"));
-    assert_eq!(auth.version(), 7);
+    assert_eq!(auth.version(), Some(7));
     assert_eq!(auth.public_key(), "4bb5d94de752a36b8b87851a3f82726a");
     assert_eq!(auth.secret_key(), None);
 }
