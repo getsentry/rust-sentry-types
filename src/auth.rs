@@ -65,18 +65,23 @@ impl Auth {
             }
             match key {
                 "timestamp" => {
-                    rv.timestamp = Some(value
+                    let timestamp = value
                         .parse()
                         .ok()
                         .and_then(|ts| timestamp_to_datetime(ts).single())
                         .or_else(|| value.parse().ok())
-                        .ok_or(AuthParseError::InvalidTimestamp)?);
+                        .ok_or(AuthParseError::InvalidTimestamp)?;
+                    rv.timestamp = Some(timestamp);
                 }
                 "client" => {
                     rv.client = Some(value.into());
                 }
                 "version" => {
-                    rv.version = value.parse().map_err(|_| AuthParseError::InvalidVersion)?;
+                    rv.version = value
+                        .splitn(2, '.')
+                        .next()
+                        .and_then(|v| v.parse().ok())
+                        .ok_or(AuthParseError::InvalidVersion)?;
                 }
                 "key" => {
                     rv.key = value.into();
