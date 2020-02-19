@@ -56,12 +56,8 @@ impl Auth {
         };
 
         for (key, value) in pairs {
-            let mut key = &key[..];
-            if key.starts_with("sentry_") {
-                key = &key[7..];
-            }
-            match key {
-                "timestamp" => {
+            match key.as_ref() {
+                "sentry_timestamp" => {
                     let timestamp = value
                         .parse()
                         .ok()
@@ -70,20 +66,20 @@ impl Auth {
 
                     rv.timestamp = timestamp;
                 }
-                "client" => {
+                "sentry_client" => {
                     rv.client = Some(value.into());
                 }
-                "version" => {
+                "sentry_version" => {
                     rv.version = value
                         .splitn(2, '.')
                         .next()
                         .and_then(|v| v.parse().ok())
                         .ok_or(AuthParseError::InvalidVersion)?;
                 }
-                "key" => {
+                "sentry_key" => {
                     rv.key = value.into();
                 }
-                "secret" => {
+                "sentry_secret" => {
                     rv.secret = Some(value.into());
                 }
                 _ => {}
