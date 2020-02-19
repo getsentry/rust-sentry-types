@@ -61,34 +61,11 @@ fn test_auth_from_iterator() {
     assert_eq!(auth.version(), 7);
     assert_eq!(auth.public_key(), "4bb5d94de752a36b8b87851a3f82726a");
     assert_eq!(auth.secret_key(), None);
-
-    let mut cont = HashMap::new();
-    cont.insert("version", "7");
-    cont.insert("client", "raven-js/3.23.3");
-    cont.insert("key", "4bb5d94de752a36b8b87851a3f82726a");
-
-    let auth = Auth::from_pairs(cont.into_iter()).unwrap();
-    assert_eq!(auth.timestamp(), None);
-    assert_eq!(auth.client_agent(), Some("raven-js/3.23.3"));
-    assert_eq!(auth.version(), 7);
-    assert_eq!(auth.public_key(), "4bb5d94de752a36b8b87851a3f82726a");
-    assert_eq!(auth.secret_key(), None);
 }
 
 #[test]
 fn test_auth_from_querystring() {
     let auth = Auth::from_querystring(b"sentry_version=7&sentry_client=raven-js/3.23.3&sentry_key=4bb5d94de752a36b8b87851a3f82726a").unwrap();
-
-    assert_eq!(auth.timestamp(), None);
-    assert_eq!(auth.client_agent(), Some("raven-js/3.23.3"));
-    assert_eq!(auth.version(), 7);
-    assert_eq!(auth.public_key(), "4bb5d94de752a36b8b87851a3f82726a");
-    assert_eq!(auth.secret_key(), None);
-
-    let auth = Auth::from_querystring(
-        b"version=7&client=raven-js/3.23.3&key=4bb5d94de752a36b8b87851a3f82726a",
-    )
-    .unwrap();
 
     assert_eq!(auth.timestamp(), None);
     assert_eq!(auth.client_agent(), Some("raven-js/3.23.3"));
