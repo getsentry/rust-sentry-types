@@ -44,9 +44,12 @@ pub struct Auth {
 
 impl Auth {
     /// Creates an auth header from key value pairs.
-    pub fn from_pairs<'a, 'b, I: Iterator<Item = (Cow<'a, str>, Cow<'b, str>)>>(
-        pairs: I,
-    ) -> Result<Auth, AuthParseError> {
+    pub fn from_pairs<'a, I, K, V>(pairs: I) -> Result<Auth, AuthParseError>
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: AsRef<str>,
+        V: Into<Cow<'a, str>>,
+    {
         let mut rv = Auth {
             timestamp: None,
             client: None,
@@ -56,6 +59,7 @@ impl Auth {
         };
 
         for (key, value) in pairs {
+            let value = value.into();
             match key.as_ref() {
                 "sentry_timestamp" => {
                     let timestamp = value
@@ -154,24 +158,24 @@ impl FromStr for Auth {
 
     fn from_str(s: &str) -> Result<Auth, AuthParseError> {
         let mut base_iter = s.splitn(2, ' ');
-        if !base_iter
-            .next()
-            .unwrap_or("")
-            .eq_ignore_ascii_case("sentry")
-        {
+
+        let prefix = base_iter.next().unwrap_or("");
+        let items = base_iter.next().unwrap_or("");
+
+        if !prefix.eq_ignore_ascii_case("sentry") {
             return Err(AuthParseError::NonSentryAuth);
         }
-        let items = base_iter.next().unwrap_or("");
-        let rv = Self::from_pairs(items.split(',').filter_map(|item| {
-            let mut kviter = item.trim().split('=');
-            Some((Cow::Borrowed(kviter.next()?), Cow::Borrowed(kviter.next()?)))
+
+        let auth = Self::from_pairs(items.split(',').filter_map(|item| {
+            let mut kviter = item.split('=');
+            Some((kviter.next()?.trim(), kviter.next()?.trim()))
         }))?;
 
-        if rv.key.is_empty() {
+        if auth.key.is_empty() {
             return Err(AuthParseError::MissingPublicKey);
         }
 
-        Ok(rv)
+        Ok(auth)
     }
 }
 
