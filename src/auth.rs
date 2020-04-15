@@ -119,7 +119,7 @@ impl Auth {
 
     /// Returns the client's secret if it authenticated with a secret.
     pub fn secret_key(&self) -> Option<&str> {
-        self.secret.as_ref().map(|x| x.as_str())
+        self.secret.as_deref()
     }
 
     /// Returns true if the authentication implies public auth (no secret)
@@ -129,7 +129,7 @@ impl Auth {
 
     /// Returns the client's agent
     pub fn client_agent(&self) -> Option<&str> {
-        self.client.as_ref().map(|x| x.as_str())
+        self.client.as_deref()
     }
 }
 

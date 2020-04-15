@@ -105,7 +105,7 @@ impl Dsn {
 
     /// Returns secret_key
     pub fn secret_key(&self) -> Option<&str> {
-        self.secret_key.as_ref().map(|x| x.as_str())
+        self.secret_key.as_deref()
     }
 
     /// Returns the host
