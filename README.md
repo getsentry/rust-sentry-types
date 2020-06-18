@@ -1,3 +1,7 @@
+# Code Moved
+
+This crate/reposity has been integrated into the https://github.com/getsentry/sentry-rust mono-repo.
+
 # Rust Sentry Types
 
 <a href="https://travis-ci.org/getsentry/rust-sentry-types"><img src="https://travis-ci.org/getsentry/rust-sentry-types.svg?branch=master" alt=""></a>
